@@ -19,7 +19,7 @@ const Section = ({ data, isActive, texts }) => {
     return (
         <div id={data.id} className="min-h-[85vh] flex flex-col justify-center py-12 px-6 md:px-12 border-b border-slate-100 snap-start bg-white">
             <div className="mb-6">
-                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide mb-3 border ${statusConfig.ui}`}>
+                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide mb-3 border break-words ${statusConfig.ui}`}>
                     <div className={`w-2 h-2 rounded-full bg-current`} />
                     {statusConfig.label[texts.lang]}
                 </div>
@@ -30,8 +30,8 @@ const Section = ({ data, isActive, texts }) => {
             <div className="grid grid-cols-3 gap-4 mb-8 max-w-2xl">
                 {data.details.map((detail, idx) => (
                     <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                        <div className="text-[10px] uppercase text-slate-400 font-bold mb-1">{detail.label}</div>
-                        <div className="text-sm font-semibold text-slate-800">{detail.value}</div>
+                        <div className="text-[10px] uppercase text-slate-400 font-bold mb-1 break-words">{detail.label}</div>
+                        <div className="text-sm font-semibold text-slate-800 break-words">{detail.value}</div>
                     </div>
                 ))}
             </div>

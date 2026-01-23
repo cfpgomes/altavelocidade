@@ -9,7 +9,7 @@ const LegendItem = ({ statusKey, texts }) => {
                 className="w-3 h-3 rounded-full shadow-sm" 
                 style={{ backgroundColor: config.hex }}
             />
-            <span className="text-[10px] font-medium text-slate-600">
+            <span className="text-[10px] font-medium text-slate-600 break-words">
                 {config.label[texts.lang]}
             </span>
         </div>

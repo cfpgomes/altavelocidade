@@ -75,41 +75,44 @@ function App() {
         <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-slate-50 font-sans md:overflow-hidden">
 
             {/* LEFT: Map Area (Static on Desktop, Top Scroll on Mobile) */}
-            <div className="w-full md:w-1/2 h-[55vh] md:h-full bg-slate-100 relative border-r border-slate-200 shadow-xl z-10 flex flex-col items-center justify-center p-6 transition-colors duration-700">
-
-                <div className="absolute top-6 left-6 z-20">
-                    <div className="flex items-center gap-2 mb-1">
-                        <div className="bg-slate-900 text-white p-1.5 rounded">
-                            <Train size={16} />
+            <div className="w-full md:w-1/2 md:h-full bg-slate-100 relative border-r border-slate-200 shadow-xl z-10 flex flex-col transition-colors duration-700">
+                
+                {/* Map Container */}
+                <div className="h-[80vh] md:h-full relative flex items-center justify-center pt-24 md:pt-6 px-1 md:px-6 py-6">
+                    <div className="absolute top-6 left-6 pr-6 z-20">
+                        <div className="flex items-center gap-2 mb-1">
+                            <div className="bg-slate-900 text-white p-1.5 rounded">
+                                <Train size={16} />
+                            </div>
+                            <span className="text-xs font-bold text-slate-500 tracking-widest">LAV PORTO-LISBOA TRACKER</span>
                         </div>
-                        <span className="text-xs font-bold text-slate-500 tracking-widest">LAV PORTO-LISBOA TRACKER</span>
+                        <h1 className="text-2xl font-black text-slate-900 leading-tight">{t.title}</h1>
+                        <p className="text-sm text-slate-600 font-medium">{t.subtitle}</p>
                     </div>
-                    <h1 className="text-2xl font-black text-slate-900 leading-tight">{t.title}</h1>
-                    <p className="text-sm text-slate-600 font-medium">{t.subtitle}</p>
-                </div>
 
-                <button
-                    onClick={() => setLang(l => l === 'pt' ? 'en' : 'pt')}
-                    className="absolute top-6 right-6 z-20 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
-                >
-                    <Globe size={14} />
-                    {lang === 'pt' ? 'EN' : 'PT'}
-                </button>
+                    <button
+                        onClick={() => setLang(l => l === 'pt' ? 'en' : 'pt')}
+                        className="absolute top-6 right-6 z-20 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                    >
+                        <Globe size={14} />
+                        {lang === 'pt' ? 'EN' : 'PT'}
+                    </button>
 
-                <div className="absolute bottom-6 left-6 z-20 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-slate-200/50 max-w-[200px]">
-                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 border-b pb-1">{t.legendTitle}</h4>
-                    <div className="space-y-1.5">
-                        <LegendItem statusKey="s1" texts={{ lang }} />
-                        <LegendItem statusKey="s2" texts={{ lang }} />
-                        <LegendItem statusKey="s3" texts={{ lang }} />
-                        <LegendItem statusKey="s4" texts={{ lang }} />
-                        <LegendItem statusKey="s5" texts={{ lang }} />
-                        <LegendItem statusKey="s6" texts={{ lang }} />
-                        <LegendItem statusKey="s7" texts={{ lang }} />
+                    {/* Legend - Desktop only (absolute positioned) */}
+                    <div className="hidden md:block absolute bottom-6 left-6 z-20 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-slate-200/50 max-w-[200px]">
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 border-b pb-1">{t.legendTitle}</h4>
+                        <div className="space-y-1.5">
+                            <LegendItem statusKey="s1" texts={{ lang }} />
+                            <LegendItem statusKey="s2" texts={{ lang }} />
+                            <LegendItem statusKey="s3" texts={{ lang }} />
+                            <LegendItem statusKey="s4" texts={{ lang }} />
+                            <LegendItem statusKey="s5" texts={{ lang }} />
+                            <LegendItem statusKey="s6" texts={{ lang }} />
+                            <LegendItem statusKey="s7" texts={{ lang }} />
+                        </div>
                     </div>
-                </div>
 
-                <svg viewBox="-100 200 1100 1950" className="h-full w-full max-w-lg drop-shadow-2xl">
+                    <svg viewBox="-100 200 1100 1950" className="h-full w-full max-w-none md:max-w-lg drop-shadow-2xl">
                     <defs>
                         <filter id="glow">
                             <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
@@ -172,8 +175,23 @@ function App() {
                     <MapStation cx={135} cy={1470} label="Lisboa-Oriente" isActive={activeSection === 'ppp3'} />
                 </svg>
 
-                <div className="md:hidden absolute bottom-4 right-4 animate-bounce text-slate-400 bg-white p-2 rounded-full shadow">
-                    <ChevronDown size={20} />
+                    <div className="md:hidden absolute bottom-4 right-4 animate-bounce text-slate-400 bg-white p-2 rounded-full shadow">
+                        <ChevronDown size={20} />
+                    </div>
+                </div>
+
+                {/* Legend - Mobile only (below map) */}
+                <div className="md:hidden bg-white/90 backdrop-blur-sm p-4 mx-4 mb-4 rounded-xl shadow-lg border border-slate-200/50">
+                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 border-b pb-1">{t.legendTitle}</h4>
+                    <div className="space-y-1.5">
+                        <LegendItem statusKey="s1" texts={{ lang }} />
+                        <LegendItem statusKey="s2" texts={{ lang }} />
+                        <LegendItem statusKey="s3" texts={{ lang }} />
+                        <LegendItem statusKey="s4" texts={{ lang }} />
+                        <LegendItem statusKey="s5" texts={{ lang }} />
+                        <LegendItem statusKey="s6" texts={{ lang }} />
+                        <LegendItem statusKey="s7" texts={{ lang }} />
+                    </div>
                 </div>
             </div>
 
