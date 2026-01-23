@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitorização LAV Porto-Lisboa</title>
+
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&display=swap');
+
+        body {
+            font-family: 'Atkinson Hyperlegible Next', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-optical-sizing: auto;
+        }
+
+        /* Custom Scrollbar for the content area (Desktop only mainly) */
+        .scroller::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scroller::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .scroller::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .scroller::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Helper Function for Dates ---
+        // Usage: date(month, year) -> date(1, 2023)
+        const date = (m, y) => y + ((m - 1) / 12);
+
+        // --- Helper object for inclusive date range ---
+        // The object should have 4 properties: start, end, startLabel, endLabel
+        // Usage: dateRange(1, 2023, 12, 2025) -> { start: 2023.0, end: 2026.0, startLabel: "Jan 2023", endLabel: "Dec 2025" }
+        // Usage: dateRange(2023, 2025) -> { start: 2023.0, end: 2026.0, startLabel: "2023", endLabel: "2025" }
+        const dateRange = (a1, a2, b1, b2) => {
+            if (b1 !== undefined && b2 !== undefined) {
+                return {
+                    start: a2 + ((a1 - 1) / 12),
+                    end: b2 + (b1 / 12),
+                    startLabelEN: `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][a1 - 1]} ${a2}`,
+                    endLabelEN: `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][b1 - 1]} ${b2}`,
+                    startLabelPT: `${['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'][a1 - 1]} ${a2}`,
+                    endLabelPT: `${['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'][b1 - 1]} ${b2}`
+                };
+            } else {
+                return {
+                    start: a1,
+                    end: a2 + 1,
+                    startLabelEN: `${a1}`,
+                    endLabelEN: `${a2}`,
+                    startLabelPT: `${a1}`,
+                    endLabelPT: `${a2}`
+                };
+            }
+        };
+
+        // --- Icons ---
+
+        const Train = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <rect width="16" height="16" x="4" y="3" rx="2" /><path d="M4 11h16" /><path d="M12 3v8" /><path d="m8 19-2 3" /><path d="m18 22-2-3" /><path d="M8 15h0" /><path d="M16 15h0" />
+            </svg>
+        );
+
+        const Globe = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" />
+            </svg>
+        );
+
+        const ChevronDown = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="m6 9 6 6 6-6" />
+            </svg>
+        );
+
+        const ExternalLink = ({ size = 12, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+        );
+
+        const CONTENT = {
+            pt: {
+                title: "Monitorização LAV Porto-Lisboa",
+                subtitle: "Estado de progresso da Linha de Alta Velocidade",
+                legendTitle: "Legenda de Estado",
+                gantt: {
+                    initial: "Calendário Planeado para Adjudicação e Obras (2025)",
+                    actual: "Calendário Atual",
+                    today: "Hoje",
+                },
+                sections: [
+                    {
+                        id: 'ppp1',
+                        title: "PPP1: Porto - Oiã",
+                        statusKey: 's5',
+                        description: "O troço Campanhã-Oiã foi adjudicado à AVAN Norte em Julho de 2025. O RECAPE, submetido em Outubro, propunha alterar a estação subterrânea de Santo Ovídio para Vilar do Paraíso, à superfície, sendo chumbado pela APA por violar o Estudo Prévio. Atualmente (Jan 2026), o consórcio prepara um novo Projeto de Execução e respetivo RECAPE que se aproximam do Estudo Prévio.",
+                        details: [
+                            { label: "Extensão", value: "72 km" },
+                            { label: "Valor da Adjudicação", value: "~1.6MM €" },
+                            { label: "Concessionária", value: "AVAN Norte" }
+                        ],
+                        gantt: {
+                            initial:
+                                { range: dateRange(2025, 2030) }
+                            ,
+                            actual: [
+                                { start: date(7, 2021), end: date(3, 2023), statusKey: 's1', source: "https://siaia.apambiente.pt/AIADOC/AIA3610/pf102a_amb.ep.10.10.01.rnt.02202382892115.pdf", tooltip: "Estudo Prévio e Estudo de Impacte Ambiental" },
+                                { start: date(3, 2023), end: date(8, 2023), statusKey: 's2', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade/impacte-ambiental", tooltip: "Declaração de Impacte Ambiental (DIA) Aprovada" },
+                                { start: date(1, 2024), end: date(7, 2024), statusKey: 's3', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: "Lançamento do Concurso Público Internacional" },
+                                { start: date(7, 2024), end: date(12, 2024), statusKey: 's4', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: "Propostas em Avaliação" },
+                                { start: date(7, 2025), end: date(10, 2025), statusKey: 's5', source: "https://www.infraestruturasdeportugal.pt/pt-pt/adjudicacao-da-concessao-da-linha-ferroviaria-de-alta-velocidade-entre-porto-campanha-e-oia", tooltip: "Assinatura do Contrato e RECAPE em preparação" },
+                                { start: date(12, 2025), end: date(3, 2026), statusKey: 's5', source: "https://eco.sapo.pt/2026/01/21/consorcio-da-mota-engil-vai-entregar-novo-projeto-para-tgv-em-gaia/", tooltip: "Novo RECAPE em preparação" },
+                                { start: date(6, 2026), end: date(7, 2030), statusKey: 's6', source: "#", tooltip: "Fase de Construção (Previsão)" },
+                                { start: date(7, 2030), end: date(12, 2030), statusKey: 's7', source: "#", tooltip: "Entrada em Serviço (Previsão)" }
+                            ]
+                        }
+                    },
+                    {
+                        id: 'ppp2',
+                        title: "PPP2: Oiã - Soure",
+                        statusKey: 's3',
+                        description: "O primeiro concurso para o troço Oiã-Soure ficou deserto em 2024, devido à exclusão da única proposta apresentada, pela AVAN Norte, que deslocava a estação de AV para fora da cidade de Coimbra. O concurso foi relançado em janeiro de 2026, com um caderno de encargos simplificado, com menos 11km e menos responsabilidades de manutenção. Prevê-se a adjudicação para o final de 2026.",
+                        details: [
+                            { label: "Extensão", value: "61 km" },
+                            { label: "Investimento", value: "~1.6MM €" },
+                            { label: "Concessionária", value: "N/A" }
+                        ],
+                        gantt: {
+                            initial: { range: dateRange(2027, 2032) },
+                            actual: [
+                                { start: date(7, 2021), end: date(6, 2023), statusKey: 's1', source: "https://siaia.apambiente.pt/AIADOC/AIA3624/pf102b_amb.ep.10.01.01-rnt-v0120231117103128.pdf", tooltip: "Estudo Prévio e Estudo de Impacte Ambiental" },
+                                { start: date(6, 2023), end: date(11, 2023), statusKey: 's2', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade/impacte-ambiental", tooltip: "Declaração de Impacte Ambiental (DIA) Aprovada" },
+                                { start: date(7, 2024), end: date(12, 2024), statusKey: 's3', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: "Lançamento do Concurso Público Internacional" },
+                                { start: date(1, 2025), end: date(3, 2025), statusKey: 's4', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: "Exclusão da Única Proposta Apresentada" },
+                                { start: date(1, 2026), end: date(5, 2026), statusKey: 's3', source: "https://diariodarepublica.pt/dr/detalhe/anuncio-procedimento/1551-2026-1023994487", tooltip: "Relançamento do Concurso Público Internacional" },
+                                { start: date(5, 2026), end: date(10, 2026), statusKey: 's4', source: "#", tooltip: "Propostas em Avaliação (Previsão)" },
+                                { start: date(10, 2026), end: date(12, 2026), statusKey: 's5', source: "#", tooltip: "Assinatura do Contrato (Previsão)" },
+                                { start: date(1, 2027), end: date(1, 2031), statusKey: 's6', source: "#", tooltip: "Fase de Construção (Previsão)" },
+                                { start: date(2, 2031), end: date(7, 2031), statusKey: 's7', source: "#", tooltip: "Entrada em Serviço (Previsão)" }
+                            ]
+                        }
+                    },
+                    {
+                        id: 'ppp3',
+                        title: "PPP3: Soure - Carregado",
+                        statusKey: 's2',
+                        description: "A Declaração de Impacte Ambiental (DIA) para o troço Soure-Carregado já foi emitida, estando agora a aguardar o lançamento do seu concurso, que se preverá ser em meados de 2026.",
+                        details: [
+                            { label: "Extensão", value: "~132 km" },
+                            { label: "Investimento", value: "N/A" },
+                            { label: "Concessionária", value: "N/A" }
+                        ],
+                        gantt: {
+                            initial: { range: dateRange(2027, 2032) },
+                            actual: [
+                                { start: date(8, 2022), end: date(1, 2025), statusKey: 's1', source: "https://participa.pt/pt/consulta/linha-ferroviaria-de-alta-velocidade-entre-porto-e-lisboa--a-linha-ferroviaria-de-alta-velocidade", tooltip: "Estudo Prévio e Estudo de Impacte Ambiental" },
+                                { start: date(2, 2025), end: date(7, 2025), statusKey: 's2', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade/impacte-ambiental", tooltip: "Declaração de Impacte Ambiental (DIA) Aprovada" },
+                                { start: date(7, 2026), end: date(12, 2026), statusKey: 's3', source: "#", tooltip: "Lançamento do Concurso Público Internacional (Previsão)" },
+                                { start: date(1, 2027), end: date(5, 2027), statusKey: 's4', source: "#", tooltip: "Propostas em Avaliação (Previsão)" },
+                                { start: date(9, 2027), end: date(2, 2028), statusKey: 's5', source: "#", tooltip: "Assinatura do Contrato (Previsão)" },
+                                { start: date(6, 2028), end: date(6, 2032), statusKey: 's6', source: "#", tooltip: "Fase de Construção (Previsão)" },
+                                { start: date(7, 2032), end: date(12, 2032), statusKey: 's7', source: "#", tooltip: "Entrada em Serviço (Previsão)" }
+                            ]
+                        }
+                    },
+                    {
+                        id: 'cp',
+                        title: "Comboios de Portugal: Material Circulante",
+                        statusKey: 's3',
+                        description: "A Comboios de Portugal vai adquirir 12 unidades de comboios de Alta Velocidade para operar na nova linha, com mais 8 unidades como opção. Já foi autorizada a despesa para esta aquisição.",
+                        details: [
+                            { label: "Quantidade", value: "12 Unidades (+8 Opção)" },
+                            { label: "Investimento", value: "~584M€" },
+                            { label: "Velocidade Máxima", value: "300 km/h" }
+                        ],
+                        gantt: {
+                            initial: { range: dateRange(2026, 2030) },
+                            actual: [
+                                { start: date(1, 2026), end: date(6, 2026), statusKey: 's3', source: "https://eco.sapo.pt/2026/01/22/cp-vai-ter-ate-20-comboios-para-a-alta-velocidade-investimento-soma-584-milhoes/", tooltip: "Concurso Público CP" },
+                                { start: date(7, 2026), end: date(12, 2026), statusKey: 's5', source: "#", tooltip: "Adjudicação / Contrato (Previsão)" },
+                                { start: date(1, 2027), end: date(12, 2030), statusKey: 's6', source: "#", tooltip: "Fabrico e Homologação (Previsão)" },
+                                { start: date(1, 2031), end: date(6, 2031), statusKey: 's7', source: "#", tooltip: "Entrada em Serviço (Previsão)" }
+                            ]
+                        }
+                    }
+                ]
+            },
+            en: {
+                title: "LAV Porto-Lisbon Tracker",
+                subtitle: "High-Speed Rail Progress Monitor",
+                legendTitle: "Status Legend",
+                gantt: {
+                    initial: "Planned Schedule for Award & Construction (2025)",
+                    actual: "Current Schedule",
+                    today: "Today",
+                },
+                sections: [
+                    {
+                        id: 'ppp1',
+                        title: "PPP1: Porto - Oiã",
+                        statusKey: 's5',
+                        description: "The section Campanhã-Oiã was awarded to AVAN Norte in July 2025. The RECAPE, submitted in October, proposed to change the underground station from Santo Ovídio to Vilar do Paraíso, at surface level, which was rejected by the APA for violating the Preliminary Study. Currently (Jan 2026), the consortium is preparing a new Execution Project and respective RECAPE that align with the Preliminary Study.",
+                        details: [
+                            { label: "Length", value: "72 km" },
+                            { label: "Award Value", value: "~€1.6B" },
+                            { label: "Concessionaire", value: "AVAN Norte" }
+                        ],
+                        gantt: {
+                            initial:
+                                { range: dateRange(2025, 2030) }
+                            ,
+                            actual: [
+                                { start: date(7, 2021), end: date(3, 2023), statusKey: 's1', source: "https://siaia.apambiente.pt/AIADOC/AIA3610/pf102a_amb.ep.10.10.01.rnt.02202382892115.pdf", tooltip: "Preliminary Study and Environmental Impact Study" },
+                                { start: date(3, 2023), end: date(8, 2023), statusKey: 's2', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade/impacte-ambiental", tooltip: "Approved Environmental Impact Declaration (DIA)" },
+                                { start: date(1, 2024), end: date(7, 2024), statusKey: 's3', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: "Launch of the International Public Tender" },
+                                { start: date(7, 2024), end: date(12, 2024), statusKey: 's4', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: "Proposals Under Evaluation" },
+                                { start: date(7, 2025), end: date(10, 2025), statusKey: 's5', source: "https://www.infraestruturasdeportugal.pt/pt-pt/adjudicacao-da-concessao-da-linha-ferroviaria-de-alta-velocidade-entre-porto-campanha-e-oia", tooltip: "Contract Signing and RECAPE in preparation" },
+                                { start: date(12, 2025), end: date(3, 2026), statusKey: 's5', source: "https://eco.sapo.pt/2026/01/21/consorcio-da-mota-engil-vai-entregar-novo-projeto-para-tgv-em-gaia/", tooltip: "New RECAPE in preparation" },
+                                { start: date(6, 2026), end: date(7, 2030), statusKey: 's6', source: "#", tooltip: "Construction Phase (Forecast)" },
+                                { start: date(7, 2030), end: date(12, 2030), statusKey: 's7', source: "#", tooltip: "Service Entry (Forecast)" }
+                            ]
+                        }
+                    },
+                    {
+                        id: 'ppp2',
+                        title: "PPP2: Oiã - Soure",
+                        statusKey: 's3',
+                        description: "The first tender for the Oiã-Soure section was unsuccessful in 2024 after rejecting the only proposal, from AVAN Norte, which relocated the high-speed station outside Coimbra. The tender was relaunched in January 2026 with simplified terms, 11km shorter and reduced maintenance responsibilities. Contract award is expected by end of 2026.",
+                        details: [
+                            { label: "Length", value: "61 km" },
+                            { label: "Award Value", value: "~€1.6B" },
+                            { label: "Concessionaire", value: "N/A" }
+                        ],
+                        gantt: {
+                            initial: { range: dateRange(2027, 2032) },
+                            actual: [
+                                { start: date(7, 2021), end: date(6, 2023), statusKey: 's1', source: "https://siaia.apambiente.pt/AIADOC/AIA3624/pf102b_amb.ep.10.01.01-rnt-v0120231117103128.pdf", tooltip: "Preliminary Study and Environmental Impact Study" },
+                                { start: date(6, 2023), end: date(11, 2023), statusKey: 's2', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade/impacte-ambiental", tooltip: "Environmental Impact Declaration Approved" },
+                                { start: date(7, 2024), end: date(12, 2024), statusKey: 's3', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: "International Public Tender Launch" },
+                                { start: date(1, 2025), end: date(3, 2025), statusKey: 's4', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: "Sole Proposal Rejected" },
+                                { start: date(1, 2026), end: date(5, 2026), statusKey: 's3', source: "https://diariodarepublica.pt/dr/detalhe/anuncio-procedimento/1551-2026-1023994487", tooltip: "International Public Tender Relaunched" },
+                                { start: date(5, 2026), end: date(10, 2026), statusKey: 's4', source: "#", tooltip: "Proposals Under Evaluation (Forecast)" },
+                                { start: date(10, 2026), end: date(12, 2026), statusKey: 's5', source: "#", tooltip: "Contract Award (Forecast)" },
+                                { start: date(1, 2027), end: date(1, 2032), statusKey: 's6', source: "#", tooltip: "Construction Phase (Forecast)" },
+                                { start: date(1, 2032), end: date(7, 2032), statusKey: 's7', source: "#", tooltip: "Service Entry (Forecast)" }
+                            ]
+                        }
+                    },
+                    {
+                        id: 'ppp3',
+                        title: "PPP3: Soure - Carregado",
+                        statusKey: 's2',
+                        description: "The Environmental Impact Declaration (EID) for the Soure-Carregado section has been issued and is awaiting tender launch, expected mid-2026.",
+                        details: [
+                            { label: "Length", value: "~143 km" },
+                            { label: "Investment", value: "N/A" },
+                            { label: "Concessionaire", value: "N/A" }
+                        ],
+                        gantt: {
+                            initial: { range: dateRange(2027, 2032) },
+                            actual: [
+                                { start: date(8, 2022), end: date(1, 2025), statusKey: 's1', source: "https://participa.pt/pt/consulta/linha-ferroviaria-de-alta-velocidade-entre-porto-e-lisboa--a-linha-ferroviaria-de-alta-velocidade", tooltip: "Preliminary Study and Environmental Impact Study" },
+                                { start: date(2, 2025), end: date(7, 2025), statusKey: 's2', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade/impacte-ambiental", tooltip: "Environmental Impact Declaration Approved" },
+                                { start: date(7, 2026), end: date(12, 2026), statusKey: 's3', source: "#", tooltip: "International Public Tender Launch (Forecast)" },
+                                { start: date(1, 2027), end: date(5, 2027), statusKey: 's4', source: "#", tooltip: "Proposals Under Evaluation (Forecast)" },
+                                { start: date(9, 2027), end: date(2, 2028), statusKey: 's5', source: "#", tooltip: "Contract Award (Forecast)" },
+                                { start: date(6, 2028), end: date(6, 2032), statusKey: 's6', source: "#", tooltip: "Construction Phase (Forecast)" },
+                                { start: date(7, 2032), end: date(12, 2032), statusKey: 's7', source: "#", tooltip: "Service Entry (Forecast)" }
+                            ]
+                        }
+                    },
+                    {
+                        id: 'cp',
+                        title: "Comboios de Portugal: Rolling Stock",
+                        statusKey: 's3',
+                        description: "Comboios de Portugal will acquire 12 high-speed train units to operate on the new line, with an additional 8 units as an option. The expenditure for this acquisition has already been authorized.",
+                        details: [
+                            { label: "Quantity", value: "12 Units (+8 Option)" },
+                            { label: "Investment", value: "~€584M" },
+                            { label: "Maximum Speed", value: "300 km/h" }
+                        ],
+                        gantt: {
+                            initial: { range: dateRange(2026, 2030) },
+                            actual: [
+                                { start: date(1, 2026), end: date(6, 2026), statusKey: 's3', source: "https://eco.sapo.pt/2026/01/22/cp-vai-ter-ate-20-comboios-para-a-alta-velocidade-investimento-soma-584-milhoes/", tooltip: "Public Tender CP" },
+                                { start: date(7, 2026), end: date(12, 2026), statusKey: 's5', source: "#", tooltip: "Award / Contract (Forecast)" },
+                                { start: date(1, 2027), end: date(12, 2030), statusKey: 's6', source: "#", tooltip: "Manufacturing and Approval (Forecast)" },
+                                { start: date(1, 2031), end: date(6, 2031), statusKey: 's7', source: "#", tooltip: "Entry into Service (Forecast)" }
+                            ]
+                        }
+                    }
+                ]
+            }
+        };
+
+        // --- Components ---
+
+        const TodayLine = ({date}) => {
+            return (
+                <div
+                    // ADDED: pointer-events-none (allows clicks to pass through)
+                    // KEPT: -top-9 and h-[calc...] (makes it taller)
+                    className="absolute -top-9 h-[calc(100%+2.25rem)] w-0.5 z-20 bg-red-500 pointer-events-none"
+                    style={{ left: `${date}%` }}
+                >
+                    <div className="absolute -top-6 w-16">
+                        <span className="absolute top-2 text-xs font-mono font-medium text-white bg-red-500 px-1.5 py-0.5 rounded-md shadow-md">
+                            {CONTENT.pt.gantt.today}
+                        </span>
+                    </div>
+                    
+                </div>
+            );
+        }
+
+        const GanttBar = ({ range, type, color, label, segments, source, lang }) => {
+            const chartStart = 2021;
+            const chartEnd = 2033;
+            const totalDuration = chartEnd - chartStart;
+
+            const containerStart = segments ? segments[0].start : range.start;
+            const containerEnd = segments ? segments[segments.length - 1].end : range.end;
+
+            const totalLeft = ((containerStart - chartStart) / totalDuration) * 100;
+            const totalWidth = ((containerEnd - containerStart) / totalDuration) * 100;
+
+            if (type === 'initial') {
+                return (
+                    <div className="relative w-full h-8 bg-slate-50 rounded-md mb-2 overflow-hidden border border-slate-100 group">
+                        <div
+                            className="absolute h-full top-0 rounded transition-all duration-1000 ease-out flex items-center px-2 opacity-30"
+                            style={{
+                                left: `${totalLeft}%`,
+                                width: `${totalWidth}%`,
+                                backgroundColor: '#94a3b8'
+                            }}
+                        >
+                            <span className="text-[10px] font-bold uppercase tracking-wider truncate text-slate-600">
+                                {label}
+                            </span>
+                        </div>
+                        <div className="hidden group-hover:flex absolute inset-0 items-center justify-end px-2 bg-white/50 backdrop-blur-[1px]">
+                            <span className="text-xs font-mono font-medium text-slate-700">
+                                {lang === 'pt' ? `${range.startLabelPT} – ${range.endLabelPT}` : `${range.startLabelEN} – ${range.endLabelEN}`}
+                            </span>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Multi-segment granular bar
+            return (
+                <div className="relative w-full h-8 bg-slate-50 rounded-md mb-2 overflow-hidden border border-slate-100 group">
+                    {segments.map((seg, idx) => {
+                        const segLeft = ((seg.start - chartStart) / totalDuration) * 100;
+                        const segWidth = ((seg.end - seg.start) / totalDuration) * 100;
+                        const config = STATUS_CONFIG[seg.statusKey];
+
+                        // Construct tooltip text
+                        const tooltipText = `${seg.tooltip || config.label.pt}\n${seg.start.toFixed(2)} - ${seg.end.toFixed(2)}${seg.source && seg.source !== '#' ? '\nClick to open source' : ''}`;
+                        const hasLink = seg.source && seg.source !== '#';
+
+                        const content = (
+                            <>
+                                {/* Link Icon if clickable */}
+                                {seg.source && seg.source !== '#' && segWidth > 0 && (
+                                    <div className="absolute right-1/2 top-1/2 -translate-y-1/2 translate-x-1/2">
+                                        <ExternalLink size={10} className="text-white" />
+                                    </div>
+                                )}
+                            </>
+                        );
+
+                        const commonClasses = "absolute h-full top-0 transition-all duration-300 hover:brightness-110 hover:shadow-lg hover:z-10 flex items-center justify-center border-r border-white/20 last:border-0 group/segment";
+                        // If no link, it should be visually transparent to indicate prediction
+                        const styles = (hasLink) ? {
+                            left: `${segLeft}%`,
+                            width: `${segWidth}%`,
+                            backgroundColor: config.hex
+                        } : {
+                            left: `${segLeft}%`,
+                            width: `${segWidth}%`,
+                            backgroundColor: config.hex,
+                            opacity: 0.4,
+                        };
+
+                        if (hasLink) {
+                            return (
+                                <a
+                                    key={idx}
+                                    href={seg.source}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`${commonClasses} cursor-pointer`}
+                                    style={styles}
+                                    title={tooltipText}
+                                >
+                                    {content}
+                                </a>
+                            );
+                        }
+
+                        return (
+                            <div
+                                key={idx}
+                                className={commonClasses}
+                                style={styles}
+                                title={tooltipText}
+                            >
+                                {content}
+                            </div>
+                        );
+                    })}
+
+                    {/* Overall Label Overlay */}
+                    <div
+                        className="absolute h-full top-0 pointer-events-none flex items-center px-2 z-20"
+                        style={{ left: `${totalLeft}%`, width: `${totalWidth}%` }}
+                    >
+                        <span className="text-[10px] font-bold uppercase tracking-wider truncate text-white mix-blend-hard-light drop-shadow-md">
+                            {label}
+                        </span>
+                    </div>
+                </div>
+            );
+        };
+
+        const Section = ({ data, isActive, texts }) => {
+            const statusConfig = STATUS_CONFIG[data.statusKey];
+            
+            // Compute today's position
+            const today = new Date();
+            const startYear = 2021;
+            const endYear = 2033;
+            const totalYears = endYear - startYear;
+            const elapsedYears = (today.getFullYear() + today.getMonth() / 12) - startYear;
+            const monthFraction = today.getMonth() / 12;
+            const dayFraction = today.getDate() / new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+            const todayPosition = ((elapsedYears + (monthFraction * (1/12)) + (dayFraction * (1/365))) / totalYears) * 100;
+
+            return (
+                <div id={data.id} className="min-h-[85vh] flex flex-col justify-center py-12 px-6 md:px-12 border-b border-slate-100 snap-start bg-white">
+                    <div className="mb-6">
+                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide mb-3 border ${statusConfig.ui}`}>
+                            <div className={`w-2 h-2 rounded-full bg-current`} />
+                            {statusConfig.label[texts.lang]}
+                        </div>
+                        <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">{data.title}</h2>
+                        <p className="text-lg text-slate-600 leading-relaxed max-w-2xl">{data.description}</p>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 mb-8 max-w-2xl">
+                        {data.details.map((detail, idx) => (
+                            <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                <div className="text-[10px] uppercase text-slate-400 font-bold mb-1">{detail.label}</div>
+                                <div className="text-sm font-semibold text-slate-800">{detail.value}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-inner relative">
+    
+                    {/* REPLACEMENT: Percentage-based positioning for years */}
+                    <div className="relative w-full h-6 text-[10px] text-slate-400 font-mono mb-2 border-b border-slate-200">
+                        {[2021, 2023, 2025, 2027, 2029, 2031, 2033].map(y => {
+                            // Calculate exact percentage position (0% to 100%)
+                            const pct = ((y - 2021) / (2033 - 2021)) * 100;
+                            
+                            // Adjust alignment: Start flush left, End flush right, Others centered
+                            let translate = '-translate-x-1/2';
+                            if (pct === 0) translate = '-translate-x-0';
+                            if (pct === 100) translate = '-translate-x-full';
+                            
+                            return (
+                                <span 
+                                    key={y} 
+                                    className={`absolute bottom-2 ${translate}`} 
+                                    style={{ left: `${pct}%` }}
+                                >
+                                    {y}
+                                </span>
+                            );
+                        })}
+                    </div>
+
+                    <div className="space-y-3 relative z-0">
+                        <TodayLine date={todayPosition} />
+                            <div>
+                                <div className="text-xs font-medium text-slate-500 mb-1">{texts.gantt.initial}</div>
+                                <GanttBar
+                                    range={data.gantt.initial.range}
+                                    type="initial"
+                                    label=""
+                                    color={statusConfig.hex}
+                                    lang={texts.lang}
+                                />
+                            </div>
+                            <div>
+                                <div className="text-xs font-medium text-slate-500 mb-1">{texts.gantt.actual}</div>
+                                <GanttBar
+                                    segments={data.gantt.actual}
+                                    type="actual"
+                                    label=""
+                                    color={statusConfig.hex}
+                                    lang={texts.lang}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const MapStation = ({ cx, cy, label, isActive }) => (
+            <g className={`transition-all duration-500 ${isActive ? 'opacity-100' : 'opacity-40'}`}>
+                <circle cx={cx} cy={cy} r={isActive ? 8 : 6} fill="white" stroke="#334155" strokeWidth="2" />
+                <text x={cx + 14} y={cy + 5} className="text-[16px] font-bold fill-slate-700 uppercase tracking-wide" style={{ textShadow: '0 2px 4px white' }}>
+                    {label}
+                </text>
+            </g>
+        );
+
+        const LegendItem = ({ statusKey, texts }) => {
+            const config = STATUS_CONFIG[statusKey];
+            return (
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: config.hex }}></div>
+                    <span className="text-[10px] font-medium text-slate-600">{config.label[texts.lang]}</span>
+                </div>
+            );
+        };
+
+        // --- Main App ---
+
+        function App() {
+            const [lang, setLang] = useState('pt');
+            const [activeSection, setActiveSection] = useState('ppp1');
+            const scrollContainerRef = useRef(null);
+
+            const t = CONTENT[lang];
+
+            useEffect(() => {
+                const handleScroll = () => {
+                    let currentScrollPos;
+                    // Determine if desktop or mobile for scroll calculation
+                    if (window.innerWidth >= 768) {
+                        if (!scrollContainerRef.current) return;
+                        // On desktop, scroll is inside the right div
+                        currentScrollPos = scrollContainerRef.current.scrollTop + (window.innerHeight / 3);
+                    } else {
+                        // On mobile, scroll is the window itself
+                        currentScrollPos = window.scrollY + (window.innerHeight / 3);
+                    }
+
+                    const sections = ['ppp1', 'ppp2', 'ppp3', 'cp'];
+
+                    for (const id of sections) {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            const top = el.offsetTop;
+                            const bottom = top + el.offsetHeight;
+                            if (top <= currentScrollPos && bottom > currentScrollPos) {
+                                setActiveSection(id);
+                                break;
+                            }
+                        }
+                    }
+                };
+
+                const container = scrollContainerRef.current;
+
+                // Attach to container (for desktop)
+                if (container) container.addEventListener('scroll', handleScroll);
+                // Attach to window (for mobile)
+                window.addEventListener('scroll', handleScroll);
+
+                return () => {
+                    if (container) container.removeEventListener('scroll', handleScroll);
+                    window.removeEventListener('scroll', handleScroll);
+                };
+            }, []);
+
+            const getPathColor = (sectionId) => {
+                const isFocused = activeSection === sectionId || activeSection === 'cp';
+                const isCP = activeSection === 'cp';
+
+                let baseColor = '#e2e8f0';
+
+                // Mapeamento dos troços para as cores dos novos estados
+                if (sectionId === 'ppp1') baseColor = STATUS_CONFIG.s5.hex; // Contrato
+                if (sectionId === 'ppp2') baseColor = STATUS_CONFIG.s3.hex; // Concurso
+                if (sectionId === 'ppp3') baseColor = STATUS_CONFIG.s2.hex; // DIA
+
+                if (activeSection === sectionId) return baseColor;
+                return isCP ? baseColor : baseColor + '60';
+            };
+
+            const getStrokeWidth = (sectionId) => activeSection === sectionId ? 14 : 7;
+
+            return (
+                <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-slate-50 font-sans md:overflow-hidden">
+
+                    {/* LEFT: Map Area (Static on Desktop, Top Scroll on Mobile) */}
+                    <div className="w-full md:w-1/2 h-[55vh] md:h-full bg-slate-100 relative border-r border-slate-200 shadow-xl z-10 flex flex-col items-center justify-center p-6 transition-colors duration-700">
+
+                        <div className="absolute top-6 left-6 z-20">
+                            <div className="flex items-center gap-2 mb-1">
+                                <div className="bg-slate-900 text-white p-1.5 rounded">
+                                    <Train size={16} />
+                                </div>
+                                <span className="text-xs font-bold text-slate-500 tracking-widest">LAV PORTO-LISBOA TRACKER</span>
+                            </div>
+                            <h1 className="text-2xl font-black text-slate-900 leading-tight">{t.title}</h1>
+                            <p className="text-sm text-slate-600 font-medium">{t.subtitle}</p>
+                        </div>
+
+                        <button
+                            onClick={() => setLang(l => l === 'pt' ? 'en' : 'pt')}
+                            className="absolute top-6 right-6 z-20 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                        >
+                            <Globe size={14} />
+                            {lang === 'pt' ? 'EN' : 'PT'}
+                        </button>
+
+                        <div className="absolute bottom-6 left-6 z-20 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-slate-200/50 max-w-[200px]">
+                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 border-b pb-1">{t.legendTitle}</h4>
+                            <div className="space-y-1.5">
+                                <LegendItem statusKey="s1" texts={{ lang }} />
+                                <LegendItem statusKey="s2" texts={{ lang }} />
+                                <LegendItem statusKey="s3" texts={{ lang }} />
+                                <LegendItem statusKey="s4" texts={{ lang }} />
+                                <LegendItem statusKey="s5" texts={{ lang }} />
+                                <LegendItem statusKey="s6" texts={{ lang }} />
+                                <LegendItem statusKey="s7" texts={{ lang }} />
+                            </div>
+                        </div>
+
+                        <svg viewBox="-100 200 1100 1950" className="h-full w-full max-w-lg drop-shadow-2xl">
+                            <defs>
+                                <filter id="glow">
+                                    <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+                                    <feMerge>
+                                        <feMergeNode in="coloredBlur" />
+                                        <feMergeNode in="SourceGraphic" />
+                                    </feMerge>
+                                </filter>
+                            </defs>
+
+                            <polygon
+                                points="498.85500,1957.2700 500.75100,1952.9400 497.19000,1940.2600 498.53100,1925.3700 497.32300,1910.9500 495.04000,1898.0500 494.02700,1884.9000 483.99700,1873.3700 481.33400,1865.8500 490.45200,1849.6000 501.05800,1834.4000 503.70600,1819.2900 512.80900,1803.0400 525.86000,1794.0500 537.41500,1784.0300 545.21100,1768.0100 553.25000,1753.2800 553.18500,1745.3000 558.49600,1737.7000 573.15100,1737.7700 585.52100,1724.9300 600.86200,1728.8700 614.13100,1721.1900 618.29800,1707.1400 627.62600,1692.1600 631.35500,1675.5400 619.26500,1675.0200 605.75000,1681.3900 592.17600,1679.8200 587.74600,1669.9300 584.18800,1657.2700 573.69700,1643.1300 567.52800,1630.9400 558.78800,1619.1700 555.06400,1613.1800 544.80500,1600.3500 548.59700,1591.6900 545.10000,1586.9800 550.19700,1578.0900 555.41200,1562.5300 564.75800,1547.5600 561.16700,1534.8800 560.70900,1532.3000 563.37300,1517.1900 575.35100,1509.7400 583.48700,1502.9700 595.00400,1492.9300 606.78700,1484.2000 617.85000,1471.6000 619.91100,1460.6000 629.23900,1445.6200 639.84700,1430.4300 635.28500,1427.2200 634.06500,1412.8100 619.70500,1399.3800 617.35200,1401.1300 603.38200,1404.9300 591.07700,1380.4700 575.64000,1368.5600 576.99800,1353.6700 578.06400,1352.1800 569.11000,1339.1200 562.70800,1325.6100 562.48000,1324.3200 567.77700,1294.0900 561.92900,1291.1300 546.97900,1281.8000 538.22400,1270.0400 529.25600,1256.9800 519.22600,1245.4500 515.20600,1230.1800 526.20600,1232.2500 543.29500,1238.5400 556.65700,1238.8200 569.56400,1236.5300 583.99100,1235.3100 597.60000,1236.8900 610.72100,1235.9000 624.55900,1238.7900 633.34900,1235.8900 641.40700,1221.1600 645.34600,1205.8200 644.33300,1192.6700 645.41200,1191.1700 655.03400,1185.4500 662.84600,1169.4300 668.09100,1153.8500 672.24500,1139.8100 671.94900,1130.5400 664.49700,1118.5300 658.09500,1105.0200 643.60600,1098.2800 642.36700,1083.8600 646.32400,1068.5300 659.83500,1062.1300 665.21000,1062.5100 679.18100,1058.7000 686.17300,1045.4800 698.54300,1032.6400 688.50800,1021.0900 684.69200,1007.1400 692.73500,992.42100 696.67400,977.07900 690.28700,963.56600 692.64900,961.78000 693.47100,958.99400 698.47200,942.13300 697.24800,927.70600 693.67200,915.02700 697.84000,900.97700 701.55000,884.34600 700.63600,879.18300 691.89600,867.41800 686.80000,853.67700 679.35200,841.68400 677.83200,840.62200 674.11000,834.64100 676.23200,831.58600 686.78600,831.04900 701.21600,829.84000 702.50700,829.61100 713.12500,814.40300 717.29300,800.35300 728.59700,789.01100 740.51600,773.62500 753.42300,771.33900 767.16100,766.22800 780.21900,757.27400 781.27800,755.74000 793.04200,747.00000 802.37000,732.01600 817.02900,732.10300 822.48700,717.82400 829.00800,702.02500 835.60900,694.20100 846.23100,679.00700 840.30100,668.07600 828.75500,655.49300 813.78700,646.14700 798.67400,643.49900 783.41400,647.53300 768.67800,639.49200 767.68300,626.35600 766.99900,622.49900 773.52100,606.70100 777.46000,591.36100 767.19800,578.51900 772.65600,564.23900 757.77300,562.88200 743.34600,564.10600 729.75200,562.51900 714.18500,557.30400 699.98700,559.81900 685.10100,558.44700 677.04700,550.55400 668.92700,557.31700 639.91200,543.81900 631.87100,558.55400 625.35100,574.35300 615.26800,577.47000 603.03100,583.63100 589.45300,582.04100 576.85600,593.59100 574.17800,586.07800 562.87300,574.76800 551.32200,584.80100 535.39100,584.96000 532.87600,570.76200 518.12700,562.74000 503.69800,563.94900 490.80500,566.23200 476.15000,566.16500 472.55800,553.48900 463.22800,568.45400 449.71800,574.85600 437.74000,582.30100 428.91600,585.17900 413.80300,582.53100 410.83200,565.75100 405.44000,565.37500 404.06800,557.63000 411.87600,541.58400 422.74600,527.69900 434.26600,517.67200 427.87900,504.15900 414.13800,509.25400 412.91400,494.82800 411.93400,481.68900 406.16600,486.70400 393.47200,490.28400 380.64500,500.54300 367.28100,500.24800 353.70300,498.65800 339.04800,498.59200 325.53900,504.99400 312.61500,507.28200 311.56600,508.78300 300.70000,522.68800 287.87400,532.94800 276.34100,542.99300 264.57300,551.71700 255.24300,566.68200 255.17600,581.33700 253.83400,596.21900 259.98000,608.45900 264.91100,606.23800 267.49200,605.78100 281.08500,607.36700 279.79400,607.59500 266.67400,608.58800 261.51100,609.50300 262.88300,617.24700 264.09200,631.67600 268.20600,654.90900 268.05800,661.59200 269.28200,676.01800 267.23800,687.03100 268.46200,701.45700 273.33000,713.90800 274.24600,719.08500 275.47000,733.51200 276.46300,746.63300 278.97300,760.81100 280.26500,760.58200 293.10900,772.97300 285.90500,784.91300 286.89700,798.03400 289.41200,812.23200 288.80700,816.33300 284.63800,830.38400 281.99400,845.51100 276.54700,859.77200 273.88400,874.88800 267.15000,889.39300 261.69100,903.67100 261.60900,918.33000 268.13000,902.53100 271.02200,888.70700 279.06200,873.97000 284.27700,858.40300 289.37300,872.14500 277.83700,882.17400 277.54100,895.54000 282.41100,908.00500 271.78700,923.18300 267.00100,918.70500 255.23800,927.46100 251.29900,942.80200 247.14500,956.83500 245.46200,962.45700 240.23200,978.02700 231.06300,1008.9400 225.60400,1023.2200 219.08400,1039.0100 211.04600,1053.7700 221.30500,1066.5900 219.86400,1073.4900 217.38100,1081.9300 210.86100,1097.7300 205.15600,1110.7000 202.19800,1116.5500 196.75500,1130.8300 191.28100,1145.1100 184.53200,1159.6200 175.44100,1175.8500 168.92000,1191.6500 163.46500,1205.9500 157.99100,1220.2300 154.06700,1235.5700 143.43400,1250.7800 131.44000,1258.2300 120.81700,1273.4100 128.26500,1285.4000 112.69600,1280.1700 99.179500,1286.5400 88.104500,1299.1700 91.925700,1313.1400 91.076400,1315.9500 90.781100,1329.3100 84.259700,1345.1100 74.925900,1360.0600 67.114600,1376.0800 65.531800,1389.7000 66.755500,1404.1200 64.107300,1419.2400 58.876900,1434.8100 49.546600,1449.7700 43.040600,1465.5700 46.831000,1479.5400 55.588500,1491.3100 69.164000,1492.8900 84.276300,1495.5400 97.183200,1493.2500 112.06800,1494.6100 123.47100,1491.2600 135.84000,1478.4200 137.41100,1464.8300 144.15700,1450.3000 156.75800,1438.7700 164.79900,1424.0300 163.13200,1429.6500 164.12900,1442.8100 169.24100,1456.5400 173.40400,1465.1100 174.62900,1479.5400 161.95000,1483.1100 148.43900,1489.5100 163.40100,1498.8300 150.57500,1509.0900 136.75300,1506.2100 141.62100,1518.6600 127.58500,1514.4900 119.89300,1501.2100 111.92000,1501.2900 97.492700,1502.5100 101.06900,1515.1900 106.18000,1528.9300 108.69500,1543.1300 108.38500,1556.5000 101.63500,1571.0100 117.20500,1576.2400 131.62800,1574.9900 145.61700,1571.2000 158.90100,1563.5300 170.65300,1554.8000 185.76300,1557.4400 198.61800,1569.8000 204.06100,1555.5300 214.91300,1541.6400 216.44500,1542.6800 213.55400,1556.5100 214.54500,1569.6200 219.64100,1583.3700 235.67200,1591.2000 220.33000,1587.2600 206.29500,1583.0900 192.09700,1585.6000 184.42000,1572.3200 174.37300,1560.7900 182.05100,1574.0700 190.79100,1585.8300 194.61200,1599.8000 197.12600,1614.0000 197.04400,1628.6600 196.76300,1642.0200 197.68100,1647.2000 193.72400,1662.5300 189.78500,1677.8700 183.26300,1693.6600 175.45200,1709.6900 171.28500,1723.7400 172.81900,1724.8000 185.64400,1737.1700 185.57700,1751.8300 185.28200,1765.1900 184.22000,1766.7100 178.99000,1782.2800 190.31000,1793.5900 181.81400,1805.7400 176.35600,1820.0200 176.28800,1834.6800 178.80300,1848.8800 177.44500,1863.7600 174.79600,1878.8700 173.73100,1880.3700 166.98500,1894.9000 157.88300,1911.1600 156.31200,1924.7500 150.83800,1939.0300 141.73600,1955.2800 136.50500,1970.8500 127.40400,1987.1100 124.52700,2000.9300 138.13500,2002.5100 150.34200,1996.3600 164.08300,1991.2600 177.21900,1990.2700 191.41700,1987.7500 203.41000,1980.3000 217.85100,1979.0800 231.59600,1974.0000 232.64000,1972.4600 236.74300,1973.0800 234.16100,1973.5400 236.21600,1985.1400 250.49500,1990.6000 264.92200,1989.3800 278.53100,1990.9600 293.02300,1997.7100 307.22100,1995.2000 322.33300,1997.8500 336.85600,2004.5900 352.26600,2016.5200 366.53800,2021.9500 380.13500,2023.5500 394.33300,2021.0400 407.01200,2017.4600 409.21700,2022.4000 420.98100,2013.6600 434.49400,2007.2700 447.54500,1998.2800 460.37500,1988.0400 473.05100,1984.4500 486.79500,1979.3700 500.30800,1972.9800 499.85100,1970.4000 498.85500,1957.2700 "
+                                fill="#ffffff"
+                                stroke="#cbd5e1"
+                                strokeWidth="2"
+                            />
+
+                            <path
+                                d="M 315,765 L 310,785 L 275,920 L 290, 945"
+                                fill="none"
+                                stroke={getPathColor('ppp1')}
+                                strokeWidth={getStrokeWidth('ppp1')}
+                                strokeLinecap="round"
+                                className="transition-all duration-700"
+                            />
+
+                            <path
+                                d="M 290,945 L 315,1055 L 310,1075"
+                                fill="none"
+                                stroke={getPathColor('ppp2')}
+                                strokeWidth={getStrokeWidth('ppp2')}
+                                strokeLinecap="round"
+                                className="transition-all duration-700"
+                            />
+
+                            <path
+                                d="M 310,1075 L 280,1200 L 155,1430"
+                                fill="none"
+                                stroke={getPathColor('ppp3')}
+                                strokeWidth={getStrokeWidth('ppp3')}
+                                strokeLinecap="round"
+                                className="transition-all duration-700"
+                            />
+
+                            <path
+                                d="M 155,1430 L 135,1470"
+                                fill="none"
+                                stroke={getPathColor('ppp3')}
+                                strokeWidth={activeSection === 'ppp3' ? 8 : 4}
+                                strokeLinecap="round"
+                                strokeDasharray="6 6"
+                                className="transition-all duration-700"
+                            />
+
+                            <MapStation cx={315} cy={765} label="Campanhã" isActive={activeSection === 'ppp1'} />
+                            <MapStation cx={310} cy={785} label="Sto. Ovídio" isActive={activeSection === 'ppp1'} />
+                            <MapStation cx={275} cy={920} label="Aveiro" isActive={activeSection === 'ppp1'} />
+                            <MapStation cx={315} cy={1055} label="Coimbra-B" isActive={activeSection === 'ppp2'} />
+                            <MapStation cx={280} cy={1200} label="Leiria" isActive={activeSection === 'ppp3'} />
+                            <MapStation cx={135} cy={1470} label="Lisboa-Oriente" isActive={activeSection === 'ppp3'} />
+                        </svg>
+
+                        <div className="md:hidden absolute bottom-4 right-4 animate-bounce text-slate-400 bg-white p-2 rounded-full shadow">
+                            <ChevronDown size={20} />
+                        </div>
+                    </div>
+
+                    {/* RIGHT: Scrollable Content Area */}
+                    <div
+                        ref={scrollContainerRef}
+                        className="w-full md:w-1/2 h-full overflow-y-auto snap-y snap-mandatory scroll-smooth bg-white scroller"
+                    >
+                        <div className="hidden md:block h-20 bg-white"></div>
+
+                        {t.sections.map((section) => (
+                            <Section
+                                key={section.id}
+                                data={section}
+                                isActive={activeSection === section.id}
+                                texts={{ lang, ...t }}
+                            />
+                        ))}
+
+                        {lang === 'pt' ? (
+                            <div className="h-[30vh] flex items-center justify-center p-8 bg-slate-50 snap-end text-center">
+                                <div>
+                                    <p className="text-slate-400 text-sm font-medium mb-2">Última Atualização: 23 de janeiro 2026</p>
+                                    <p className="text-slate-300 text-xs max-w-xs mx-auto">
+                                        Os dados baseiam-se em anúncios públicos da Infraestruturas de Portugal, decretos do Governo, e notícias de imprensa.
+                                        As previsões são meramente indicativas e não vinculativas, baseando-se na minha intuição pessoal.
+                                    </p>
+                                    <p className="text-slate-300 text-xs max-w-xs mx-auto mt-2">
+                                        Este website não é oficial, tratando-se de um projeto independente e sem afiliação com as instituições envolvidas na LAV.
+                                    </p>
+                                    <p className="text-slate-400 text-xs mt-4">
+                                        © 2026 - Desenvolvido por um entusiasta de ferrovia. Todos os direitos reservados.
+                                    </p>
+                                    <p className="text-slate-400 text-xs mt-2">
+                                        Cláudio Gomes - <a href="https://cfpgomes.github.io/" className="underline hover:text-slate-600">cfpgomes.github.io</a>
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="h-[30vh] flex items-center justify-center p-8 bg-slate-50 snap-end text-center">
+                                <div>
+                                    <p className="text-slate-400 text-sm font-medium mb-2">Last Updated: January 23, 2026</p>
+                                    <p className="text-slate-300 text-xs max-w-xs mx-auto">
+                                        Data is based on public announcements from Infraestruturas de Portugal, government decrees, and press reports.
+                                        Forecasts are indicative only and not binding, based on personal assessment.
+                                    </p>
+                                    <p className="text-slate-300 text-xs max-w-xs mx-auto mt-2">
+                                        This website is unofficial and independent, with no affiliation to the organizations involved in the high-speed rail project.
+                                    </p>
+                                    <p className="text-slate-400 text-xs mt-4">
+                                        © 2026 - Developed by a rail enthusiast. All rights reserved.
+                                    </p>
+                                    <p className="text-slate-400 text-xs mt-2">
+                                        Cláudio Gomes - <a href="https://cfpgomes.github.io/" className="underline hover:text-slate-600">cfpgomes.github.io</a>
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
