@@ -26,3 +26,22 @@
 .scroller::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
+
+/* High-speed train animation */
+@keyframes train-move-x {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+.train-animate {
+  animation: train-move-x 3.5s linear forwards;
+}
+
+@keyframes train-move-y {
+  0% { transform: translateY(-120%); }
+  100% { transform: translateY(120%); }
+}
+
+.train-animate-y {
+  animation: train-move-y 3.5s linear forwards;
+}

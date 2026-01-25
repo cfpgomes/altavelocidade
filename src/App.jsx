@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import LegendItem from './components/LegendItem';
 import Section from './components/Section';
 import MapStation from './components/MapStation';
-import { CONTENT, STATUS_CONFIG} from './data';
+import TimelineDetail from './components/TimelineDetail';
+import { getContentByLang, STATUS_CONFIG} from './data';
 
-import { Train, Globe, ChevronDown} from './components/icons'; // Adjusted casing to match the file name
+import { Train, Globe, ChevronDown} from './components/Icons'; // Adjusted casing to match the file name
 
-function App() {
-    const [lang, setLang] = useState('pt');
+function MainApp({ lang, setLang }) {
     const [activeSection, setActiveSection] = useState('ppp1');
     const scrollContainerRef = useRef(null);
+    const location = useLocation();
 
-    const t = CONTENT[lang];
+    const t = getContentByLang(lang);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -26,7 +28,7 @@ function App() {
                 currentScrollPos = window.scrollY + (window.innerHeight / 3);
             }
 
-            const sections = ['ppp1', 'ppp2', 'ppp3', 'cp'];
+            const sections = ['ppp1', 'ppp2', 'ppp3', 'comboios'];
 
             for (const id of sections) {
                 const el = document.getElementById(id);
@@ -54,9 +56,27 @@ function App() {
         };
     }, []);
 
+    // Scroll to section based on URL hash when landing on main page
+    useEffect(() => {
+        const hash = location.hash;
+        if (!hash) return;
+        const id = hash.replace('#', '');
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        // Desktop: scroll the right container; Mobile: window scroll
+        if (window.innerWidth >= 768 && scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
+        } else {
+            window.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
+        }
+        setActiveSection(id);
+    }, [location.hash]);
+
     const getPathColor = (sectionId) => {
-        const isFocused = activeSection === sectionId || activeSection === 'cp';
-        const isCP = activeSection === 'cp';
+        const isMobile = window.innerWidth < 768;
+        const isFocused = activeSection === sectionId || activeSection === 'comboios';
+        const isCP = activeSection === 'comboios';
 
         let baseColor = '#e2e8f0';
 
@@ -65,11 +85,18 @@ function App() {
         if (sectionId === 'ppp2') baseColor = STATUS_CONFIG.s3.hex; // Concurso
         if (sectionId === 'ppp3') baseColor = STATUS_CONFIG.s2.hex; // DIA
 
+        // On mobile, show all sections as active (full color)
+        if (isMobile) return baseColor;
         if (activeSection === sectionId) return baseColor;
         return isCP ? baseColor : baseColor + '60';
     };
 
-    const getStrokeWidth = (sectionId) => activeSection === sectionId ? 14 : 7;
+    const getStrokeWidth = (sectionId) => {
+        const isMobile = window.innerWidth < 768;
+        // On mobile, show all sections with full width
+        if (isMobile) return 14;
+        return activeSection === sectionId ? 14 : 7;
+    };
 
     return (
         <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-slate-50 font-sans md:overflow-hidden">
@@ -161,18 +188,18 @@ function App() {
                         d="M 155,1430 L 135,1470"
                         fill="none"
                         stroke={getPathColor('ppp3')}
-                        strokeWidth={activeSection === 'ppp3' ? 8 : 4}
+                        strokeWidth={window.innerWidth < 768 ? 8 : (activeSection === 'ppp3' ? 8 : 4)}
                         strokeLinecap="round"
                         strokeDasharray="6 6"
                         className="transition-all duration-700"
                     />
 
-                    <MapStation cx={315} cy={765} label="Campanhã" isActive={activeSection === 'ppp1'} />
-                    <MapStation cx={310} cy={785} label="Sto. Ovídio" isActive={activeSection === 'ppp1'} />
-                    <MapStation cx={275} cy={920} label="Aveiro" isActive={activeSection === 'ppp1'} />
-                    <MapStation cx={315} cy={1055} label="Coimbra-B" isActive={activeSection === 'ppp2'} />
-                    <MapStation cx={280} cy={1200} label="Leiria" isActive={activeSection === 'ppp3'} />
-                    <MapStation cx={135} cy={1470} label="Lisboa-Oriente" isActive={activeSection === 'ppp3'} />
+                    <MapStation cx={315} cy={765} label="Campanhã" isActive={window.innerWidth < 768 || activeSection === 'ppp1'} />
+                    <MapStation cx={310} cy={785} label="Sto. Ovídio" isActive={window.innerWidth < 768 || activeSection === 'ppp1'} />
+                    <MapStation cx={275} cy={920} label="Aveiro" isActive={window.innerWidth < 768 || activeSection === 'ppp1'} />
+                    <MapStation cx={315} cy={1055} label="Coimbra-B" isActive={window.innerWidth < 768 || activeSection === 'ppp2'} />
+                    <MapStation cx={280} cy={1200} label="Leiria" isActive={window.innerWidth < 768 || activeSection === 'ppp3'} />
+                    <MapStation cx={135} cy={1470} label="Lisboa-Oriente" isActive={window.innerWidth < 768 || activeSection === 'ppp3'} />
                 </svg>
 
                     <div className="md:hidden absolute bottom-4 right-4 animate-bounce text-slate-400 bg-white p-2 rounded-full shadow">
@@ -252,6 +279,32 @@ function App() {
                 )}
             </div>
         </div>
+    );
+}
+
+function App() {
+    const [lang, setLang] = useState(() => {
+        try {
+            const saved = localStorage.getItem('lav-lang');
+            if (saved === 'pt' || saved === 'en') return saved;
+        } catch {}
+        const nav = (navigator.languages && navigator.languages[0]) || navigator.language || '';
+        const isPortuguese = /^pt\b/i.test(nav);
+        const initial = isPortuguese ? 'pt' : 'en';
+        try { localStorage.setItem('lav-lang', initial); } catch {}
+        return initial;
+    });
+
+    // Persist language after user toggles; do not re-detect
+    useEffect(() => {
+        try { localStorage.setItem('lav-lang', lang); } catch {}
+    }, [lang]);
+
+    return (
+        <Routes>
+            <Route path="/" element={<MainApp lang={lang} setLang={setLang} />} />
+            <Route path=":sectionId" element={<TimelineDetail lang={lang} />} />
+        </Routes>
     );
 }
 

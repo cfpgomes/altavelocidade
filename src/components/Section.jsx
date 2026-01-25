@@ -1,9 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { STATUS_CONFIG } from '../data';
 import TodayLine from './TodayLine';
 import GanttBar from './GanttBar';
 
 const Section = ({ data, isActive, texts }) => {
+    const navigate = useNavigate();
     const statusConfig = STATUS_CONFIG[data.statusKey];
 
     // Compute today's position
@@ -59,7 +61,7 @@ const Section = ({ data, isActive, texts }) => {
                 </div>
 
                 <div className="space-y-3 relative z-0">
-                    <TodayLine date={todayPosition} />
+                    <TodayLine date={todayPosition} label={texts.gantt.today} />
 
                     <div>
                         <div className="text-xs font-medium text-slate-500 mb-1">{texts.gantt.initial}</div>
@@ -80,6 +82,19 @@ const Section = ({ data, isActive, texts }) => {
                             lang={texts.lang}
                         />
                     </div>
+                </div>
+
+                {/* More Details Button */}
+                <div className="flex justify-end">
+                    <button
+                        onClick={() => navigate(`${data.id}`)}
+                        className="mt-6 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2"
+                    >
+                        <span>{texts.lang === 'pt' ? 'Mais detalhes' : 'More details'}</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
