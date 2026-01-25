@@ -247,6 +247,9 @@ function MainApp({ lang, setLang }) {
                                 As previsões são meramente indicativas e não vinculativas, baseando-se na minha intuição pessoal.
                             </p>
                             <p className="text-slate-300 text-xs max-w-xs mx-auto mt-2">
+                                <b>Nota: eu sou uma pessoa muito otimista! As minhas estimativas de prazos podem ser consideradas ambiciosas.</b>
+                            </p>
+                            <p className="text-slate-300 text-xs max-w-xs mx-auto mt-2">
                                 Este website não é oficial, tratando-se de um projeto independente e sem afiliação com as instituições envolvidas na LAV.
                             </p>
                             <p className="text-slate-400 text-xs mt-4">
@@ -264,6 +267,9 @@ function MainApp({ lang, setLang }) {
                             <p className="text-slate-300 text-xs max-w-xs mx-auto">
                                 Data is based on public announcements from Infraestruturas de Portugal, government decrees, and press reports.
                                 Forecasts are indicative only and not binding, based on personal assessment.
+                            </p>
+                            <p className="text-slate-300 text-xs max-w-xs mx-auto mt-2">
+                                <b>Disclaimer: I am very optimistic! My timeline estimates may be considered ambitious.</b>
                             </p>
                             <p className="text-slate-300 text-xs max-w-xs mx-auto mt-2">
                                 This website is unofficial and independent, with no affiliation to the organizations involved in the high-speed rail project.
