@@ -87,7 +87,7 @@ const Section = ({ data, isActive, texts }) => {
                 {/* More Details Button */}
                 <div className="flex justify-end">
                     <button
-                        onClick={() => navigate(`${data.id}`)}
+                        onClick={() => navigate(`/${data.id}`)}
                         className="mt-6 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2"
                     >
                         <span>{texts.lang === 'pt' ? 'Mais detalhes' : 'More details'}</span>
