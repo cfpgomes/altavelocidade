@@ -1,5 +1,5 @@
 import React from 'react';
-import { STATUS_CONFIG } from '../data';
+import { STATUS_CONFIG, formatDecimalDate } from '../data';
 import { ExternalLink } from './Icons';
 
 const GanttBar = ({ range, type, color, label, segments, source, lang }) => {
@@ -45,8 +45,13 @@ const GanttBar = ({ range, type, color, label, segments, source, lang }) => {
                 const segWidth = ((seg.end - seg.start) / totalDuration) * 100;
                 const config = STATUS_CONFIG[seg.statusKey];
 
-                // Construct tooltip text
-                const tooltipText = `${seg.tooltip || config.label.pt}\n${seg.start.toFixed(2)} - ${seg.end.toFixed(2)}${seg.source && seg.source !== '#' ? '\nClick to open source' : ''}`;
+                // Construct tooltip text with formatted dates
+                const startDate = formatDecimalDate(seg.start);
+                const endDate = formatDecimalDate(seg.end);
+                const baseLabel = seg.tooltip || config.label[lang];
+                const startLabel = lang === 'pt' ? startDate.pt : startDate.en;
+                const endLabel = lang === 'pt' ? endDate.pt : endDate.en;
+                const tooltipText = `${baseLabel}\n${startLabel} - ${endLabel}${seg.source && seg.source !== '#' ? (lang === 'pt' ? '\nClique para abrir fonte' : '\nClick to open source') : ''}`;
                 
                 const hasLink = seg.source && seg.source !== '#';
 
