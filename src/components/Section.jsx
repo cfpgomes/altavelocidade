@@ -1,25 +1,27 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { STATUS_CONFIG } from '../data';
+import { STATUS_CONFIG, CHART_START, CHART_END } from '../data';
 import TodayLine from './TodayLine';
 import GanttBar from './GanttBar';
 
-const Section = ({ data, isActive, texts }) => {
+const Section = ({ data, isActive, texts, isFirst, isLast, idx }) => {
     const navigate = useNavigate();
     const statusConfig = STATUS_CONFIG[data.statusKey];
 
     // Compute today's position
     const today = new Date();
-    const startYear = 2021;
-    const endYear = 2033;
+    const startYear = CHART_START;
+    const endYear = CHART_END;
     const totalYears = endYear - startYear;
     const elapsedYears = (today.getFullYear() + today.getMonth() / 12) - startYear;
     const monthFraction = today.getMonth() / 12;
     const dayFraction = today.getDate() / new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const todayPosition = ((elapsedYears + (monthFraction * (1/12)) + (dayFraction * (1/365))) / totalYears) * 100;
 
+    const paddingClasses = `${isFirst ? 'pt-8' : 'pt-8'} ${isLast ? 'pb-8' : 'pb-8'}`;
+
     return (
-        <div id={data.id} className="min-h-[85vh] flex flex-col justify-center py-12 px-6 md:px-12 border-b border-slate-100 snap-start bg-white">
+        <div id={data.id} className={`flex flex-col ${paddingClasses} ${isFirst ? '-mt-px' : ''} px-6 md:px-12 border-b border-slate-100 snap-start bg-white section-animate`} style={{ animationDelay: `${idx * 0.1}s` }}>
             <div className="mb-6">
                 <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide mb-3 border break-words ${statusConfig.ui}`}>
                     <div className={`w-2 h-2 rounded-full bg-current`} />
@@ -42,11 +44,11 @@ const Section = ({ data, isActive, texts }) => {
                 
                  {/* REPLACEMENT: Percentage-based positioning for years */}
                  <div className="relative w-full h-6 text-[10px] text-slate-400 font-mono mb-2 border-b border-slate-200">
-                    {[2021, 2023, 2025, 2027, 2029, 2031, 2033].map(y => {
-                        const pct = ((y - 2021) / (2033 - 2021)) * 100;
+                    {Array.from({ length: Math.ceil((CHART_END - CHART_START) / 2) + 1 }, (_, i) => CHART_START + i * 2).map(y => {
+                        const pct = ((y - CHART_START) / (CHART_END - CHART_START)) * 100;
                         let translate = '-translate-x-1/2';
                         if (pct === 0) translate = '-translate-x-0';
-                        if (pct === 100) translate = '-translate-x-full';
+                        if (pct >= 100) translate = '-translate-x-full';
                         
                         return (
                             <span 
@@ -75,12 +77,30 @@ const Section = ({ data, isActive, texts }) => {
 
                     <div>
                         <div className="text-xs font-medium text-slate-500 mb-1">{texts.gantt.actual}</div>
-                        <GanttBar 
-                            segments={data.gantt.actual} 
-                            type="actual" 
-                            label=""
-                            lang={texts.lang}
-                        />
+                        {data.gantt.actualRows ? (
+                            <div className="space-y-2">
+                                {data.gantt.actualRows.map((row, rowIdx) => (
+                                    <div key={rowIdx}>
+                                        <div className="text-[11px] font-semibold text-slate-500 mb-1">
+                                            {typeof row.label === 'string' ? row.label : row.label[texts.lang]}
+                                        </div>
+                                        <GanttBar
+                                            segments={row.segments}
+                                            type="actual"
+                                            label=""
+                                            lang={texts.lang}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <GanttBar 
+                                segments={data.gantt.actual} 
+                                type="actual" 
+                                label=""
+                                lang={texts.lang}
+                            />
+                        )}
                     </div>
                 </div>
 

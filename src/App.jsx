@@ -1,21 +1,120 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Routes, Route, useLocation, Link } from 'react-router-dom';
 import LegendItem from './components/LegendItem';
 import Section from './components/Section';
 import MapStation from './components/MapStation';
 import TimelineDetail from './components/TimelineDetail';
+import SubmitUpdates from './components/SubmitUpdates';
+import CompleteGanttChart from './components/CompleteGanttChart';
 import { getContentByLang, STATUS_CONFIG} from './data';
 
-import { Train, Globe, ChevronDown} from './components/Icons'; // Adjusted casing to match the file name
+import { Train, Globe, ChevronDown, Send } from './components/Icons'; // Adjusted casing to match the file name
 
 function MainApp({ lang, setLang }) {
     const [activeSection, setActiveSection] = useState('ppp1');
+    const [activeChapter, setActiveChapter] = useState('porto-lisboa');
+    const [openChapters, setOpenChapters] = useState(['porto-lisboa', 'lisboa-madrid', 'porto-vigo', 'comboios-portugal']);
     const scrollContainerRef = useRef(null);
+    const chapterRefs = useRef({});
+    const hasScrolledToHash = useRef(false);
     const location = useLocation();
+
+    // Get build date - automatically injected by Vite at build time
+    const buildDate = new Date(__BUILD_DATE__);
+    const formattedBuildDate = buildDate.toLocaleDateString(lang === 'pt' ? 'pt-PT' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
     const t = getContentByLang(lang);
 
+    const getSignalingStatusKey = () => {
+        const sigSection = t.sections.find(s => s.id === 'sinalizacao-telecomunicacoes');
+        if (!sigSection) return 's1';
+        return sigSection.statusKey;
+    };
+
+    const getSignalingStatusColor = () => {
+        const statusKey = getSignalingStatusKey();
+        return STATUS_CONFIG[statusKey]?.hex || STATUS_CONFIG.s1.hex;
+    };
+
+    const getLisboaMadridSignalingStatusKey = () => {
+        const sigSection = t.sections.find(s => s.id === 'lav-lisboa-madrid-sinalizacao-telecomunicacoes');
+        if (!sigSection) return 's1';
+        return sigSection.statusKey;
+    };
+
+    const getLisboaMadridSignalingStatusColor = () => {
+        const statusKey = getLisboaMadridSignalingStatusKey();
+        return STATUS_CONFIG[statusKey]?.hex || STATUS_CONFIG.s1.hex;
+    };
+
+    const isMobile = window.innerWidth < 768;
+
+    const shouldShowLight = (lightPosition) => {
+        const statusKey = getSignalingStatusKey();
+        // s5 = contract, show only first light
+        if (statusKey === 's5') return lightPosition === 'first';
+        // s6 = construction, show only middle light
+        if (statusKey === 's6') return lightPosition === 'middle';
+        // s7 = finished, show only last light
+        if (statusKey === 's7') return lightPosition === 'last';
+        // By default (s1 and others), show all lights
+        return true;
+    };
+
+    const shouldShowLisboaMadridLight = (lightPosition) => {
+        const statusKey = getLisboaMadridSignalingStatusKey();
+        // s5 = contract, show only first light
+        if (statusKey === 's5') return lightPosition === 'first';
+        // s6 = construction, show only middle light
+        if (statusKey === 's6') return lightPosition === 'middle';
+        // s7 = finished, show only last light
+        if (statusKey === 's7') return lightPosition === 'last';
+        // By default (s1 and others), show all lights
+        return true;
+    };
+
+    const chapters = useMemo(() => {
+        const pppSections = t.sections.filter(s => s.id !== 'comboios' && !s.id.includes('lav-lisboa-madrid'));
+        const lisboaMadridSections = t.sections.filter(s => s.id.includes('lav-lisboa-madrid'));
+        const comboiosSections = t.sections.filter(s => s.id === 'comboios');
+        
+        return [
+            {
+                id: 'porto-lisboa',
+                title: lang === 'pt' ? 'LAV Porto - Lisboa' : 'LAV Porto - Lisbon',
+                subtitle: t.subtitle,
+                sections: pppSections
+            },
+            {
+                id: 'lisboa-madrid',
+                title: lang === 'pt' ? 'LAV Lisboa - Madrid' : 'LAV Lisbon - Madrid',
+                subtitle: lang === 'pt'
+                    ? 'Projetos estruturantes do corredor de Alta Velocidade Lisboa-Madrid'
+                    : 'Structuring projects of the Lisbon-Madrid High-Speed corridor',
+                sections: lisboaMadridSections
+            },
+            {
+                id: 'porto-vigo',
+                title: lang === 'pt' ? 'LAV Porto - Vigo' : 'LAV Porto - Vigo',
+                subtitle: lang === 'pt'
+                    ? 'Conteúdo em preparação. Atualizações em breve.'
+                    : 'Content in progress. Updates coming soon.',
+                sections: []
+            },
+            {
+                id: 'comboios-portugal',
+                title: lang === 'pt' ? 'Comboios de Portugal' : 'Comboios de Portugal',
+                subtitle: lang === 'pt'
+                    ? 'Informações sobre a aquisição de material circulante.'
+                    : 'Information about rolling stock acquisition.',
+                sections: comboiosSections
+            }
+        ];
+    }, [lang, t.sections, t.subtitle]);
+
     useEffect(() => {
+        if (activeChapter !== 'porto-lisboa') return;
+
         const handleScroll = () => {
             let currentScrollPos;
             // Determine if desktop or mobile for scroll calculation
@@ -28,7 +127,7 @@ function MainApp({ lang, setLang }) {
                 currentScrollPos = window.scrollY + (window.innerHeight / 3);
             }
 
-            const sections = ['ppp1', 'ppp2', 'ppp3', 'comboios'];
+            const sections = t.sections.map((section) => section.id);
 
             for (const id of sections) {
                 const el = document.getElementById(id);
@@ -54,23 +153,60 @@ function MainApp({ lang, setLang }) {
             if (container) container.removeEventListener('scroll', handleScroll);
             window.removeEventListener('scroll', handleScroll);
         };
-    }, []);
+    }, [activeChapter, t.sections]);
+
+    // Scroll to chapter when it opens
+    useEffect(() => {
+        if (activeChapter && chapterRefs.current[activeChapter]) {
+            const chapterElement = chapterRefs.current[activeChapter];
+            if (scrollContainerRef.current) {
+                // Small delay to let the animation start
+                setTimeout(() => {
+                    chapterElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 50);
+            }
+        }
+    }, [activeChapter]);
 
     // Scroll to section based on URL hash when landing on main page
     useEffect(() => {
         const hash = location.hash;
         if (!hash) return;
         const id = hash.replace('#', '');
+        
+        // Find which chapter this section belongs to
+        const sectionChapter = chapters.find(ch => 
+            ch.sections.some(s => s.id === id)
+        );
+        
+        // Set the active chapter if needed
+        if (sectionChapter && activeChapter !== sectionChapter.id) {
+            setActiveChapter(sectionChapter.id);
+            return; // Wait for next render after chapter is set
+        }
+
+        // Don't scroll again if we already did
+        if (hasScrolledToHash.current) return;
+
         const el = document.getElementById(id);
         if (!el) return;
 
-        // Desktop: scroll the right container; Mobile: window scroll
-        if (window.innerWidth >= 768 && scrollContainerRef.current) {
-            scrollContainerRef.current.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
-        } else {
-            window.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
-        }
-        setActiveSection(id);
+        // Small delay to ensure the DOM is ready after chapter change
+        setTimeout(() => {
+            // Desktop: scroll the right container; Mobile: window scroll
+            if (window.innerWidth >= 768 && scrollContainerRef.current) {
+                scrollContainerRef.current.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
+            } else {
+                window.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
+            }
+            setActiveSection(id);
+            hasScrolledToHash.current = true;
+        }, 100);
+    }, [activeChapter, location.hash, chapters]);
+
+    // Reset the scroll flag when hash changes
+    useEffect(() => {
+        hasScrolledToHash.current = false;
     }, [location.hash]);
 
     const getPathColor = (sectionId) => {
@@ -84,6 +220,13 @@ function MainApp({ lang, setLang }) {
         if (sectionId === 'ppp1') baseColor = STATUS_CONFIG.s5.hex; // Contrato
         if (sectionId === 'ppp2') baseColor = STATUS_CONFIG.s3.hex; // Concurso
         if (sectionId === 'ppp3') baseColor = STATUS_CONFIG.s2.hex; // DIA
+        if (sectionId === 'quadruplicacao-linha-norte') baseColor = STATUS_CONFIG.s1.hex; // Estudo
+        if (sectionId === 'sinalizacao-telecomunicacoes') baseColor = STATUS_CONFIG.s1.hex; // Estudo
+        if (sectionId === 'lav-lisboa-madrid-terceira-travessia') baseColor = STATUS_CONFIG.s1.hex; // Estudo
+        if (sectionId === 'lav-lisboa-madrid-barreiro-evora') baseColor = STATUS_CONFIG.s1.hex; // Estudo
+        if (sectionId === 'lav-lisboa-madrid-duplicacao-evora-elvas') baseColor = STATUS_CONFIG.s1.hex; // Estudo
+        if (sectionId === 'lav-lisboa-madrid-ligacao-transfonteiriça') baseColor = STATUS_CONFIG.s1.hex; // Estudo
+        if (sectionId === 'lav-lisboa-madrid-sinalizacao-telecomunicacoes') baseColor = STATUS_CONFIG.s1.hex; // Estudo
 
         // On mobile, show all sections as active (full color)
         if (isMobile) return baseColor;
@@ -111,19 +254,28 @@ function MainApp({ lang, setLang }) {
                             <div className="bg-slate-900 text-white p-1.5 rounded">
                                 <Train size={16} />
                             </div>
-                            <span className="text-xs font-bold text-slate-500 tracking-widest">LAV PORTO-LISBOA TRACKER</span>
+                            <span className="text-xs font-bold text-slate-500 tracking-widest">LAV TRACKER</span>
                         </div>
                         <h1 className="text-2xl font-black text-slate-900 leading-tight">{t.title}</h1>
                         <p className="text-sm text-slate-600 font-medium">{t.subtitle}</p>
                     </div>
 
-                    <button
-                        onClick={() => setLang(l => l === 'pt' ? 'en' : 'pt')}
-                        className="absolute top-6 right-6 z-20 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
-                    >
-                        <Globe size={14} />
-                        {lang === 'pt' ? 'EN' : 'PT'}
-                    </button>
+                    <div className="absolute top-6 right-6 z-20 flex items-center gap-2">
+                        <Link
+                            to="/submit"
+                            className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-2"
+                        >
+                            <Send size={14} />
+                            {lang === 'pt' ? 'Submeter Novidades' : 'Submit Updates'}
+                        </Link>
+                        <button
+                            onClick={() => setLang(l => l === 'pt' ? 'en' : 'pt')}
+                            className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                        >
+                            <Globe size={14} />
+                            {lang === 'pt' ? 'EN' : 'PT'}
+                        </button>
+                    </div>
 
                     {/* Legend - Desktop only (absolute positioned) */}
                     <div className="hidden md:block absolute bottom-6 left-6 z-20 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-slate-200/50 max-w-[200px]">
@@ -187,19 +339,98 @@ function MainApp({ lang, setLang }) {
                     <path
                         d="M 155,1430 L 135,1470"
                         fill="none"
-                        stroke={getPathColor('ppp3')}
-                        strokeWidth={window.innerWidth < 768 ? 8 : (activeSection === 'ppp3' ? 8 : 4)}
+                        stroke={getPathColor('quadruplicacao-linha-norte')}
+                        strokeWidth={window.innerWidth < 768 ? 8 : (activeSection === 'quadruplicacao-linha-norte' ? 8 : 4)}
                         strokeLinecap="round"
                         strokeDasharray="6 6"
                         className="transition-all duration-700"
                     />
 
+                    {/* LAV Lisboa-Madrid Paths */}
+                    
+                    <path
+                        d="M 135,1470 L 150,1490"
+                        fill="none"
+                        stroke={getPathColor('lav-lisboa-madrid-terceira-travessia')}
+                        strokeWidth={getStrokeWidth('lav-lisboa-madrid-terceira-travessia')}
+                        strokeLinecap="round"
+                        className="transition-all duration-700"
+                    />
+
+                    <path
+                        d="M 150,1490 L 220,1490 L 280,1510 L 340,1530 L 400,1550"
+                        fill="none"
+                        stroke={getPathColor('lav-lisboa-madrid-barreiro-evora')}
+                        strokeWidth={getStrokeWidth('lav-lisboa-madrid-barreiro-evora')}
+                        strokeLinecap="round"
+                        className="transition-all duration-700"
+                    />
+
+                    <path
+                        d="M 400,1550 L 500,1520 L 600,1472"
+                        fill="none"
+                        stroke={getPathColor('lav-lisboa-madrid-duplicacao-evora-elvas')}
+                        strokeWidth={getStrokeWidth('lav-lisboa-madrid-duplicacao-evora-elvas')}
+                        strokeLinecap="round"
+                        className="transition-all duration-700"
+                    />
+
+                    <path
+                        d="M 600,1472 L 620,1472"
+                        fill="none"
+                        stroke={getPathColor('lav-lisboa-madrid-ligacao-transfonteiriça')}
+                        strokeWidth={getStrokeWidth('lav-lisboa-madrid-ligacao-transfonteiriça')}
+                        strokeLinecap="round"
+                        className="transition-all duration-700"
+                    />
+
+                    {/* Central Status Traffic Light */}
+                    <g className={`transition-all duration-500 ${isMobile || activeSection === 'sinalizacao-telecomunicacoes' || activeSection === 'comboios' ? 'opacity-100' : 'opacity-30'}`}>
+                        {/* Pole */}
+                        <rect x={236} y={1050} width="20" height="80" fill="#2c3e50" stroke="#1a252f" strokeWidth="1" rx="2" />
+                        
+                        {/* Top light (First/Contract) */}
+                        <circle cx={246} cy={1065} r="8" fill="#ddd" stroke="#999" strokeWidth="1" />
+                        {shouldShowLight('first') && <circle cx={246} cy={1065} r="6" fill={getSignalingStatusColor()} filter="url(#glow)" />}
+                        
+                        {/* Middle light (Construction) */}
+                        <circle cx={246} cy={1090} r="8" fill="#ddd" stroke="#999" strokeWidth="1" />
+                        {shouldShowLight('middle') && <circle cx={246} cy={1090} r="6" fill={getSignalingStatusColor()} filter="url(#glow)" />}
+                        
+                        {/* Bottom light (Finished) */}
+                        <circle cx={246} cy={1115} r="8" fill="#ddd" stroke="#999" strokeWidth="1" />
+                        {shouldShowLight('last') && <circle cx={246} cy={1115} r="6" fill={getSignalingStatusColor()} filter="url(#glow)" />}
+                    </g>
+
+                    {/* Lisboa-Madrid Status Traffic Light */}
+                    <g className={`transition-all duration-500 ${isMobile || activeSection === 'lav-lisboa-madrid-sinalizacao-telecomunicacoes' || activeSection === 'comboios' ? 'opacity-100' : 'opacity-30'}`}>
+                        {/* Pole */}
+                        <rect x={240} y={1520} width="20" height="80" fill="#2c3e50" stroke="#1a252f" strokeWidth="1" rx="2" />
+                        
+                        {/* Top light (First/Contract) */}
+                        <circle cx={250} cy={1535} r="8" fill="#ddd" stroke="#999" strokeWidth="1" />
+                        {shouldShowLisboaMadridLight('first') && <circle cx={250} cy={1535} r="6" fill={getLisboaMadridSignalingStatusColor()} filter="url(#glow)" />}
+                        
+                        {/* Middle light (Construction) */}
+                        <circle cx={250} cy={1560} r="8" fill="#ddd" stroke="#999" strokeWidth="1" />
+                        {shouldShowLisboaMadridLight('middle') && <circle cx={250} cy={1560} r="6" fill={getLisboaMadridSignalingStatusColor()} filter="url(#glow)" />}
+                        
+                        {/* Bottom light (Finished) */}
+                        <circle cx={250} cy={1585} r="8" fill="#ddd" stroke="#999" strokeWidth="1" />
+                        {shouldShowLisboaMadridLight('last') && <circle cx={250} cy={1585} r="6" fill={getLisboaMadridSignalingStatusColor()} filter="url(#glow)" />}
+                    </g>
+
                     <MapStation cx={315} cy={765} label="Campanhã" isActive={window.innerWidth < 768 || activeSection === 'ppp1'} />
-                    <MapStation cx={310} cy={785} label="Sto. Ovídio" isActive={window.innerWidth < 768 || activeSection === 'ppp1'} />
+                    <MapStation cx={310} cy={785} label="Santo Ovídio" isActive={window.innerWidth < 768 || activeSection === 'ppp1'} />
                     <MapStation cx={275} cy={920} label="Aveiro" isActive={window.innerWidth < 768 || activeSection === 'ppp1'} />
                     <MapStation cx={315} cy={1055} label="Coimbra-B" isActive={window.innerWidth < 768 || activeSection === 'ppp2'} />
                     <MapStation cx={280} cy={1200} label="Leiria" isActive={window.innerWidth < 768 || activeSection === 'ppp3'} />
-                    <MapStation cx={135} cy={1470} label="Lisboa-Oriente" isActive={window.innerWidth < 768 || activeSection === 'ppp3'} />
+                    <MapStation cx={135} cy={1470} label="Lisboa-Oriente" isActive={window.innerWidth < 768 || activeSection === 'quadruplicacao-linha-norte' || activeSection === 'lav-lisboa-madrid-terceira-travessia'}  labelOffsetY={-6} />
+                    
+                    {/* LAV Lisboa-Madrid Stations */}
+                    <MapStation cx={220} cy={1490} label="Aeroporto Luís de Camões" isActive={window.innerWidth < 768 || activeSection === 'lav-lisboa-madrid-barreiro-evora'} labelOffsetY={-6} />
+                    <MapStation cx={400} cy={1550} label="Évora" isActive={window.innerWidth < 768 || activeSection === 'lav-lisboa-madrid-barreiro-evora' || activeSection === 'lav-lisboa-madrid-duplicacao-evora-elvas'} labelOffsetY={10} />
+                    <MapStation cx={600} cy={1472} label="Elvas-Caia" isActive={window.innerWidth < 768 || activeSection === 'lav-lisboa-madrid-duplicacao-evora-elvas' || activeSection === 'lav-lisboa-madrid-ligacao-transfonteiriça'} labelOffsetY={14} />
                 </svg>
 
                     <div className="md:hidden absolute bottom-4 right-4 animate-bounce text-slate-400 bg-white p-2 rounded-full shadow">
@@ -225,23 +456,88 @@ function MainApp({ lang, setLang }) {
             {/* RIGHT: Scrollable Content Area */}
             <div
                 ref={scrollContainerRef}
-                className="w-full md:w-1/2 h-full overflow-y-auto snap-y snap-mandatory scroll-smooth bg-white scroller"
+                className="w-full md:w-1/2 h-full overflow-y-auto scroll-smooth bg-white scroller"
             >
-                <div className="hidden md:block h-20 bg-white"></div>
+                <div className="hidden md:block h-8 bg-white"></div>
 
-                {t.sections.map((section) => (
-                    <Section
-                        key={section.id}
-                        data={section}
-                        isActive={activeSection === section.id}
-                        texts={{ lang, ...t }}
-                    />
-                ))}
+                <div className="space-y-4 px-4 md:px-6 pb-10">
+                    {chapters.map((chapter) => {
+                        const isOpen = openChapters.includes(chapter.id);
+                        return (
+                            <div
+                                ref={(el) => {
+                                    if (el) chapterRefs.current[chapter.id] = el;
+                                }}
+                                key={chapter.id}
+                                className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm"
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setActiveChapter(chapter.id);
+                                        setOpenChapters(prev => 
+                                            prev.includes(chapter.id) 
+                                                ? prev.filter(id => id !== chapter.id)
+                                                : [...prev, chapter.id]
+                                        );
+                                    }}
+                                    className="w-full flex items-center justify-between gap-4 p-5 text-left hover:bg-slate-50/70 transition-colors"
+                                >
+                                    <div>
+                                        <h2 className="text-lg md:text-xl font-black text-slate-900">
+                                            {chapter.title}
+                                        </h2>
+                                    </div>
+                                    <span className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}>
+                                        <ChevronDown size={18} />
+                                    </span>
+                                </button>
+
+                                <div className={`border-t border-slate-100 bg-white overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[10000px]' : 'max-h-0'}`}>
+                                    {chapter.sections.length > 0 ? (
+                                            <div>
+                                                {chapter.sections.map((section, idx) => (
+                                                    <Section
+                                                        key={section.id}
+                                                        data={section}
+                                                        isActive={activeSection === section.id}
+                                                        texts={{ lang, ...t }}
+                                                        isFirst={idx === 0}
+                                                        isLast={idx === chapter.sections.length - 1}
+                                                    />
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="p-6 text-sm text-slate-500">
+                                                {lang === 'pt'
+                                                    ? 'Em breve adicionamos detalhes sobre este projeto.'
+                                                    : 'Details for this project are coming soon.'}
+                                            </div>
+                                        )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Complete Gantt Chart Overview */}
+                <div className="py-12 px-4 bg-white border-b border-slate-200">
+                    <div className="max-w-full mx-auto">
+                        <h2 className="text-2xl font-bold text-slate-900 mb-2 text-center">
+                            {lang === 'pt' ? 'Timeline Completa de Todos os Projetos' : 'Complete Timeline of All Projects'}
+                        </h2>
+                        <p className="text-slate-600 text-center mb-8">
+                            {lang === 'pt' ? 'Visualização agregada de todos os cronogramas' : 'Aggregated view of all schedules'}
+                        </p>
+                        
+                        <CompleteGanttChart sections={t.sections} lang={lang} chapters={chapters} />
+                    </div>
+                </div>
 
                 {lang === 'pt' ? (
-                    <div className="h-[30vh] flex items-center justify-center p-8 bg-slate-50 snap-end text-center">
+                    <div className="h-[30vh] flex items-center justify-center p-8 bg-slate-50 text-center">
                         <div>
-                            <p className="text-slate-400 text-sm font-medium mb-2">Última Atualização: 23 de janeiro 2026</p>
+                            <p className="text-slate-400 text-sm font-medium mb-2">Última Atualização: {formattedBuildDate}</p>
                             <p className="text-slate-300 text-xs max-w-xs mx-auto">
                                 Os dados baseiam-se em anúncios públicos da Infraestruturas de Portugal, decretos do Governo, e notícias de imprensa.
                                 As previsões são meramente indicativas e não vinculativas, baseando-se na minha intuição pessoal.
@@ -261,9 +557,9 @@ function MainApp({ lang, setLang }) {
                         </div>
                     </div>
                 ) : (
-                    <div className="h-[30vh] flex items-center justify-center p-8 bg-slate-50 snap-end text-center">
+                    <div className="h-[30vh] flex items-center justify-center p-8 bg-slate-50 text-center">
                         <div>
-                            <p className="text-slate-400 text-sm font-medium mb-2">Last Updated: January 23, 2026</p>
+                            <p className="text-slate-400 text-sm font-medium mb-2">Last Updated: {formattedBuildDate}</p>
                             <p className="text-slate-300 text-xs max-w-xs mx-auto">
                                 Data is based on public announcements from Infraestruturas de Portugal, government decrees, and press reports.
                                 Forecasts are indicative only and not binding, based on personal assessment.
@@ -310,6 +606,7 @@ function App() {
         <Routes>
             <Route path="/" element={<MainApp lang={lang} setLang={setLang} />} />
             <Route path=":sectionId" element={<TimelineDetail lang={lang} />} />
+            <Route path="/submit" element={<SubmitUpdates lang={lang} />} />
         </Routes>
     );
 }
