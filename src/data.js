@@ -312,12 +312,74 @@ export const CONTENT = {
                 actual: [
                     { range: dateRange(1, 2026, 6, 2026), statusKey: 's3', source: "https://eco.sapo.pt/2026/01/22/cp-vai-ter-ate-20-comboios-para-a-alta-velocidade-investimento-soma-584-milhoes/", tooltip: { pt: "Concurso Público CP", en: "CP Public Tender" } },
                     { range: dateRange(7, 2026, 12, 2026), statusKey: 's5', source: "#", tooltip: { pt: "Adjudicação / Contrato (Previsão)", en: "Adjudication / Contract (Forecast)" } },
-                    { range: dateRange(1, 2027, 12, 2030), statusKey: 's6', source: "#", tooltip: { pt: "Fábrico e Homologação (Previsão)", en: "Manufacturing and Homologation (Forecast)" } },
+                    { range: dateRange(1, 2027, 12, 2030), statusKey: 's6', source: "#", tooltip: { pt: "Fabrico e Homologação (Previsão)", en: "Manufacturing and Homologation (Forecast)" } },
                     { range: dateRange(1, 2031, 6, 2031), statusKey: 's7', source: "#", tooltip: { pt: "Entrada em Serviço (Previsão)", en: "Service Entry (Forecast)" } }
                 ]
             },
             timeline: [
                 { date: date(1, 2026), label: { pt: "CP – Comboios de Portugal foi autorizada a comprar até 20 automotoras para a LAV, num investimento de 584 milhões de euros", en: "CP – Comboios de Portugal was authorized to purchase up to 20 train units for the LAV, with an investment of 584 million euros" }, link: "https://www.portugal.gov.pt/pt/gc25/comunicacao/noticia?i=alta-velocidade-governo-avanca-com-compra-de-20-comboios-e-lanca-concurso-para-troco-oia-soure" }
+            ]
+        },
+        {
+            id: 'lav-porto-vigo-fase-1',
+            title: { pt: "LAV Porto - Vigo: Fase 1", en: "HSR Porto - Vigo: Phase 1" },
+            statusKey: 's1',
+            description: {
+                pt: "Esta fase destaca-se por envolver dois segmentos desconexos: Porto - Aeroporto Francisco Sá Carneiro, e Braga - Valença. O Estudo Prévio e o Estudo de Impacte Ambiental estão em finalização.",
+                en: "This phase is notable for involving two disconnected segments: Porto - Francisco Sá Carneiro Airport, and Braga - Valença. The Preliminary Study and Environmental Impact Assessment are in finalization."
+            },
+            details: [
+                { label: { pt: "Extensão", en: "Length" }, value: "N/A" },
+                { label: { pt: "Investimento", en: "Investment" }, value: "N/A" },
+                { label: { pt: "Concessionária", en: "Concessionaire" }, value: "N/A" }
+            ],
+            gantt: {
+                initial: { range: dateRange(2024, 2033) },
+                actual: [
+                    { range: dateRange(2, 2024, 4, 2026), statusKey: 's1', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: { pt: "Estudo Prévio e Estudo de Impacte Ambiental (Previsão)", en: "Preliminary Study and Environmental Impact Assessment (Forecast)" } },
+                    { range: dateRange(5, 2026, 12, 2026), statusKey: 's2', source: "#", tooltip: { pt: "Declaração de Impacte Ambiental (Previsão)", en: "Environmental Impact Statement (Forecast)" } },
+                    { range: dateRange(1, 2027, 6, 2027), statusKey: 's3', source: "#", tooltip: { pt: "Lançamento do Concurso Público Internacional (Previsão)", en: "International Public Tender Launch (Forecast)" } },
+                    { range: dateRange(7, 2027, 10, 2027), statusKey: 's4', source: "#", tooltip: { pt: "Propostas em Avaliação (Previsão)", en: "Proposals Under Evaluation (Forecast)" } },
+                    { range: dateRange(11, 2027, 2, 2028), statusKey: 's5', source: "#", tooltip: { pt: "Assinatura do Contrato (Previsão)", en: "Contract Signature (Forecast)" } },
+                    { range: dateRange(3, 2028, 12, 2032), statusKey: 's6', source: "#", tooltip: { pt: "Fase de Construção (Previsão)", en: "Construction Phase (Forecast)" } },
+                    { range: dateRange(1, 2033, 6, 2033), statusKey: 's7', source: "#", tooltip: { pt: "Entrada em Serviço (Previsão)", en: "Service Entry (Forecast)" } }
+                ]
+            },
+            timeline: [
+                { date: date(2, 2024), label: { pt: "Início da Fase 1 em Estudo Prévio e EIA", en: "Phase 1 starts under Preliminary Study and EIA" }, link: "#" },
+                { date: date(4, 2026), label: { pt: "Faseamento Porto - Aeroporto FSC e Braga - Valença consolidado", en: "Phasing for Porto - FSC Airport and Braga - Valença consolidated" }, link: "#" },
+                { date: date(1, 2027), label: { pt: "Preparação de concurso internacional (previsão)", en: "Preparation of international tender (forecast)" }, link: "#" }
+            ]
+        },
+        {
+            id: 'lav-porto-vigo-fase-2',
+            title: { pt: "LAV Porto - Vigo: Fase 2", en: "HSR Porto - Vigo: Phase 2" },
+            statusKey: 's1',
+            description: {
+                pt: "A Fase 2 da LAV Porto - Vigo corresponde ao segmento Aeroporto Francisco Sá Carneiro - Nine. Este troço está atualmente em Estudo Prévio e Estudo de Impacte Ambiental.",
+                en: "Phase 2 of the Porto - Vigo HSR corresponds to the Francisco Sa Carneiro Airport - Nine segment. This section is currently under Preliminary Study and Environmental Impact Assessment."
+            },
+            details: [
+                { label: { pt: "Extensão", en: "Length" }, value: "N/A" },
+                { label: { pt: "Investimento", en: "Investment" }, value: "N/A" },
+                { label: { pt: "Concessionária", en: "Concessionaire" }, value: "N/A" }
+            ],
+            gantt: {
+                initial: { range: dateRange(2024, 2033) },
+                actual: [
+                    { range: dateRange(2, 2024, 4, 2026), statusKey: 's1', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: { pt: "Estudo Prévio e Estudo de Impacte Ambiental (Previsão)", en: "Preliminary Study and Environmental Impact Assessment (Forecast)" } },
+                    { range: dateRange(5, 2026, 12, 2026), statusKey: 's2', source: "#", tooltip: { pt: "Declaração de Impacte Ambiental (Previsão)", en: "Environmental Impact Statement (Forecast)" } },
+                    { range: dateRange(1, 2031, 6, 2031), statusKey: 's3', source: "#", tooltip: { pt: "Lançamento do Concurso Público Internacional (Previsão)", en: "International Public Tender Launch (Forecast)" } },
+                    { range: dateRange(7, 2031, 10, 2031), statusKey: 's4', source: "#", tooltip: { pt: "Propostas em Avaliação (Previsão)", en: "Proposals Under Evaluation (Forecast)" } },
+                    { range: dateRange(9, 2031, 12, 2031), statusKey: 's5', source: "#", tooltip: { pt: "Assinatura do Contrato (Previsão)", en: "Contract Signature (Forecast)" } },
+                    { range: dateRange(1, 2032, 6, 2034), statusKey: 's6', source: "#", tooltip: { pt: "Fase de Construção (Previsão)", en: "Construction Phase (Forecast)" } },
+                    { range: dateRange(7, 2034, 12, 2034), statusKey: 's7', source: "#", tooltip: { pt: "Entrada em Serviço (Previsão)", en: "Service Entry (Forecast)" } }
+                ]
+            },
+            timeline: [
+                { date: date(2, 2024), label: { pt: "Início da Fase 2 em Estudo Prévio e EIA", en: "Phase 2 starts under Preliminary Study and EIA" }, link: "#" },
+                { date: date(9, 2030), label: { pt: "Aprofundamento técnico do segmento Aeroporto FSC - Nine (previsão)", en: "Technical refinement of the FSC Airport - Nine segment (forecast)" }, link: "#" },
+                { date: date(11, 2031), label: { pt: "Assinatura de contrato da Fase 2 (previsão)", en: "Phase 2 contract signature (forecast)" }, link: "#" }
             ]
         },
         {

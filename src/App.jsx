@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Routes, Route, useLocation, Link } from 'react-router-dom';
+import { Routes, Route, useLocation, Link, useNavigate } from 'react-router-dom';
 import LegendItem from './components/LegendItem';
 import Section from './components/Section';
 import MapStation from './components/MapStation';
@@ -13,11 +13,14 @@ import { Train, Globe, ChevronDown, Send } from './components/Icons'; // Adjuste
 function MainApp({ lang, setLang }) {
     const [activeSection, setActiveSection] = useState('ppp1');
     const [activeChapter, setActiveChapter] = useState('porto-lisboa');
-    const [openChapters, setOpenChapters] = useState(['porto-lisboa', 'lisboa-madrid', 'porto-vigo', 'comboios-portugal']);
+    const [isTabMenuOpen, setIsTabMenuOpen] = useState(false);
+    const [hoveredPath, setHoveredPath] = useState(null);
+    const [hoveredSignal, setHoveredSignal] = useState(null);
     const scrollContainerRef = useRef(null);
-    const chapterRefs = useRef({});
+    const tabMenuContainerRef = useRef(null);
     const hasScrolledToHash = useRef(false);
     const location = useLocation();
+    const navigate = useNavigate();
 
     // Get build date - automatically injected by Vite at build time
     const buildDate = new Date(__BUILD_DATE__);
@@ -74,7 +77,10 @@ function MainApp({ lang, setLang }) {
     };
 
     const chapters = useMemo(() => {
-        const pppSections = t.sections.filter(s => s.id !== 'comboios' && !s.id.includes('lav-lisboa-madrid'));
+        const pppSections = t.sections.filter(
+            s => s.id !== 'comboios' && !s.id.includes('lav-lisboa-madrid') && !s.id.includes('lav-porto-vigo')
+        );
+        const portoVigoSections = t.sections.filter(s => s.id.includes('lav-porto-vigo'));
         const lisboaMadridSections = t.sections.filter(s => s.id.includes('lav-lisboa-madrid'));
         const comboiosSections = t.sections.filter(s => s.id === 'comboios');
         
@@ -97,9 +103,9 @@ function MainApp({ lang, setLang }) {
                 id: 'porto-vigo',
                 title: lang === 'pt' ? 'LAV Porto - Vigo' : 'LAV Porto - Vigo',
                 subtitle: lang === 'pt'
-                    ? 'Conteúdo em preparação. Atualizações em breve.'
-                    : 'Content in progress. Updates coming soon.',
-                sections: []
+                    ? 'Novo corredor internacional Porto - Vigo em duas fases de desenvolvimento.'
+                    : 'New Porto - Vigo international corridor in two development phases.',
+                sections: portoVigoSections
             },
             {
                 id: 'comboios-portugal',
@@ -112,9 +118,12 @@ function MainApp({ lang, setLang }) {
         ];
     }, [lang, t.sections, t.subtitle]);
 
-    useEffect(() => {
-        if (activeChapter !== 'porto-lisboa') return;
+    const activeChapterData = useMemo(
+        () => chapters.find((chapter) => chapter.id === activeChapter) || chapters[0],
+        [chapters, activeChapter]
+    );
 
+    useEffect(() => {
         const handleScroll = () => {
             let currentScrollPos;
             // Determine if desktop or mobile for scroll calculation
@@ -127,9 +136,11 @@ function MainApp({ lang, setLang }) {
                 currentScrollPos = window.scrollY + (window.innerHeight / 3);
             }
 
-            const sections = t.sections.map((section) => section.id);
+            const chapterSectionIds = activeChapterData?.sections.map((section) => section.id) || [];
 
-            for (const id of sections) {
+            if (chapterSectionIds.length === 0) return;
+
+            for (const id of chapterSectionIds) {
                 const el = document.getElementById(id);
                 if (el) {
                     const top = el.offsetTop;
@@ -153,20 +164,40 @@ function MainApp({ lang, setLang }) {
             if (container) container.removeEventListener('scroll', handleScroll);
             window.removeEventListener('scroll', handleScroll);
         };
-    }, [activeChapter, t.sections]);
+    }, [activeChapterData]);
 
-    // Scroll to chapter when it opens
-    useEffect(() => {
-        if (activeChapter && chapterRefs.current[activeChapter]) {
-            const chapterElement = chapterRefs.current[activeChapter];
-            if (scrollContainerRef.current) {
-                // Small delay to let the animation start
-                setTimeout(() => {
-                    chapterElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 50);
-            }
+    const scrollToSection = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        if (window.innerWidth >= 768 && scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
+        } else {
+            window.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
         }
-    }, [activeChapter]);
+    };
+
+    const setActiveTab = (chapterId) => {
+        setIsTabMenuOpen(false);
+        setActiveChapter(chapterId);
+        const chapter = chapters.find((item) => item.id === chapterId);
+        if (!chapter || chapter.sections.length === 0) return;
+
+        const activeInChapter = chapter.sections.some((section) => section.id === activeSection);
+        const nextSectionId = activeInChapter ? activeSection : chapter.sections[0].id;
+        setActiveSection(nextSectionId);
+        navigate('/');
+
+        if (window.innerWidth >= 768 && scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
+        if (scrollContainerRef.current) {
+            const panelTop = scrollContainerRef.current.getBoundingClientRect().top + window.scrollY;
+            window.scrollTo({ top: panelTop, behavior: 'smooth' });
+        }
+    };
 
     // Scroll to section based on URL hash when landing on main page
     useEffect(() => {
@@ -209,6 +240,22 @@ function MainApp({ lang, setLang }) {
         hasScrolledToHash.current = false;
     }, [location.hash]);
 
+    useEffect(() => {
+        const handleOutsideTap = (event) => {
+            if (!isTabMenuOpen) return;
+            if (tabMenuContainerRef.current?.contains(event.target)) return;
+            setIsTabMenuOpen(false);
+        };
+
+        document.addEventListener('mousedown', handleOutsideTap);
+        document.addEventListener('touchstart', handleOutsideTap);
+
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideTap);
+            document.removeEventListener('touchstart', handleOutsideTap);
+        };
+    }, [isTabMenuOpen]);
+
     const getPathColor = (sectionId) => {
         const isMobile = window.innerWidth < 768;
         const isFocused = activeSection === sectionId || activeSection === 'comboios';
@@ -227,6 +274,8 @@ function MainApp({ lang, setLang }) {
         if (sectionId === 'lav-lisboa-madrid-duplicacao-evora-elvas') baseColor = STATUS_CONFIG.s1.hex; // Estudo
         if (sectionId === 'lav-lisboa-madrid-ligacao-transfonteiriça') baseColor = STATUS_CONFIG.s1.hex; // Estudo
         if (sectionId === 'lav-lisboa-madrid-sinalizacao-telecomunicacoes') baseColor = STATUS_CONFIG.s1.hex; // Estudo
+        if (sectionId === 'lav-porto-vigo-fase-1') baseColor = STATUS_CONFIG.s1.hex; // Estudo
+        if (sectionId === 'lav-porto-vigo-fase-2') baseColor = STATUS_CONFIG.s1.hex; // Estudo
 
         // On mobile, show all sections as active (full color)
         if (isMobile) return baseColor;
@@ -240,6 +289,40 @@ function MainApp({ lang, setLang }) {
         if (isMobile) return 14;
         return activeSection === sectionId ? 14 : 7;
     };
+
+    const goToSectionFromMap = (sectionId) => {
+        const sectionChapter = chapters.find(chapter =>
+            chapter.sections.some(section => section.id === sectionId)
+        );
+
+        if (sectionChapter) {
+            setActiveChapter(sectionChapter.id);
+        }
+
+        setActiveSection(sectionId);
+        navigate(`/#${sectionId}`);
+
+        setTimeout(() => {
+            scrollToSection(sectionId);
+        }, 100);
+    };
+
+    const getInteractivePathStrokeWidth = (sectionId) => {
+        const isMobile = window.innerWidth < 768;
+        const baseWidth = sectionId === 'quadruplicacao-linha-norte'
+            ? (isMobile ? 8 : (activeSection === 'quadruplicacao-linha-norte' ? 8 : 4))
+            : getStrokeWidth(sectionId);
+
+        if (hoveredPath === sectionId) {
+            return Math.max(baseWidth, isMobile ? 14 : 10);
+        }
+
+        return baseWidth;
+    };
+
+    const getInteractivePathClassName = (sectionId) => (
+        `transition-all duration-700 cursor-pointer ${hoveredPath === sectionId ? 'brightness-110' : 'hover:brightness-110'}`
+    );
 
     return (
         <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-slate-50 font-sans md:overflow-hidden">
@@ -309,41 +392,245 @@ function MainApp({ lang, setLang }) {
                         strokeWidth="2"
                     />
 
+                    {/* Gray dashed reference subpaths (under all route paths/text) */}
+                    <path
+                        d="M 315,765 L 320,685"
+                        fill="none"
+                        stroke="#94a3b8"
+                        strokeWidth="5"
+                        strokeLinecap="round"
+                        strokeDasharray="8 8"
+                        opacity="0.8"
+                        pointerEvents="none"
+                    />
+
+                    <path
+                        d="M 320,685 L 345,665"
+                        fill="none"
+                        stroke="#94a3b8"
+                        strokeWidth="5"
+                        strokeLinecap="round"
+                        strokeDasharray="8 8"
+                        opacity="0.8"
+                        pointerEvents="none"
+                    />
+
+                    {/* Invisible full-width hitboxes to make route hover/click easier */}
+                    <rect
+                        x={-100}
+                        y={765}
+                        width={1100}
+                        height={180}
+                        fill="rgba(0,0,0,0)"
+                        pointerEvents="all"
+                        className="cursor-pointer"
+                        onMouseEnter={() => setHoveredPath('ppp1')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('ppp1')}
+                    />
+
+                    <rect
+                        x={-100}
+                        y={945}
+                        width={1100}
+                        height={130}
+                        fill="rgba(0,0,0,0)"
+                        pointerEvents="all"
+                        className="cursor-pointer"
+                        onMouseEnter={() => setHoveredPath('ppp2')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('ppp2')}
+                    />
+
+                    <rect
+                        x={-100}
+                        y={1075}
+                        width={1100}
+                        height={355}
+                        fill="rgba(0,0,0,0)"
+                        pointerEvents="all"
+                        className="cursor-pointer"
+                        onMouseEnter={() => setHoveredPath('ppp3')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('ppp3')}
+                    />
+
+                    <rect
+                        x={-100}
+                        y={1430}
+                        width={1100}
+                        height={40}
+                        fill="rgba(0,0,0,0)"
+                        pointerEvents="all"
+                        className="cursor-pointer"
+                        onMouseEnter={() => setHoveredPath('quadruplicacao-linha-norte')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('quadruplicacao-linha-norte')}
+                    />
+
+                    <rect
+                        x={-100}
+                        y={745}
+                        width={1100}
+                        height={20}
+                        fill="rgba(0,0,0,0)"
+                        pointerEvents="all"
+                        className="cursor-pointer"
+                        onMouseEnter={() => setHoveredPath('lav-porto-vigo-fase-1')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('lav-porto-vigo-fase-1')}
+                    />
+
+                    <rect
+                        x={-100}
+                        y={515}
+                        width={1100}
+                        height={150}
+                        fill="rgba(0,0,0,0)"
+                        pointerEvents="all"
+                        className="cursor-pointer"
+                        onMouseEnter={() => setHoveredPath('lav-porto-vigo-fase-1')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('lav-porto-vigo-fase-1')}
+                    />
+
+                    <rect
+                        x={-100}
+                        y={685}
+                        width={1100}
+                        height={60}
+                        fill="rgba(0,0,0,0)"
+                        pointerEvents="all"
+                        className="cursor-pointer"
+                        onMouseEnter={() => setHoveredPath('lav-porto-vigo-fase-2')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('lav-porto-vigo-fase-2')}
+                    />
+
+                    <rect
+                        x={135}
+                        y={1470}
+                        width={15}
+                        height={20}
+                        fill="rgba(0,0,0,0)"
+                        pointerEvents="all"
+                        className="cursor-pointer"
+                        onMouseEnter={() => setHoveredPath('lav-lisboa-madrid-terceira-travessia')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('lav-lisboa-madrid-terceira-travessia')}
+                    />
+
+                    <rect
+                        x={150}
+                        y={1490}
+                        width={250}
+                        height={60}
+                        fill="rgba(0,0,0,0)"
+                        pointerEvents="all"
+                        className="cursor-pointer"
+                        onMouseEnter={() => setHoveredPath('lav-lisboa-madrid-barreiro-evora')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('lav-lisboa-madrid-barreiro-evora')}
+                    />
+
+                    <rect
+                        x={400}
+                        y={1472}
+                        width={200}
+                        height={78}
+                        fill="rgba(0,0,0,0)"
+                        pointerEvents="all"
+                        className="cursor-pointer"
+                        onMouseEnter={() => setHoveredPath('lav-lisboa-madrid-duplicacao-evora-elvas')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('lav-lisboa-madrid-duplicacao-evora-elvas')}
+                    />
+
+                    <rect
+                        x={600}
+                        y={1472}
+                        width={20}
+                        height={1}
+                        fill="rgba(0,0,0,0)"
+                        pointerEvents="all"
+                        className="cursor-pointer"
+                        onMouseEnter={() => setHoveredPath('lav-lisboa-madrid-ligacao-transfonteiriça')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('lav-lisboa-madrid-ligacao-transfonteiriça')}
+                    />
+
                     <path
                         d="M 315,765 L 310,785 L 275,920 L 290, 945"
                         fill="none"
                         stroke={getPathColor('ppp1')}
-                        strokeWidth={getStrokeWidth('ppp1')}
+                        strokeWidth={getInteractivePathStrokeWidth('ppp1')}
                         strokeLinecap="round"
-                        className="transition-all duration-700"
+                        className={getInteractivePathClassName('ppp1')}
+                        onMouseEnter={() => setHoveredPath('ppp1')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('ppp1')}
                     />
 
                     <path
                         d="M 290,945 L 315,1055 L 310,1075"
                         fill="none"
                         stroke={getPathColor('ppp2')}
-                        strokeWidth={getStrokeWidth('ppp2')}
+                        strokeWidth={getInteractivePathStrokeWidth('ppp2')}
                         strokeLinecap="round"
-                        className="transition-all duration-700"
+                        className={getInteractivePathClassName('ppp2')}
+                        onMouseEnter={() => setHoveredPath('ppp2')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('ppp2')}
                     />
 
                     <path
                         d="M 310,1075 L 280,1200 L 155,1430"
                         fill="none"
                         stroke={getPathColor('ppp3')}
-                        strokeWidth={getStrokeWidth('ppp3')}
+                        strokeWidth={getInteractivePathStrokeWidth('ppp3')}
                         strokeLinecap="round"
-                        className="transition-all duration-700"
+                        className={getInteractivePathClassName('ppp3')}
+                        onMouseEnter={() => setHoveredPath('ppp3')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('ppp3')}
                     />
 
                     <path
                         d="M 155,1430 L 135,1470"
                         fill="none"
                         stroke={getPathColor('quadruplicacao-linha-norte')}
-                        strokeWidth={window.innerWidth < 768 ? 8 : (activeSection === 'quadruplicacao-linha-norte' ? 8 : 4)}
+                        strokeWidth={getInteractivePathStrokeWidth('quadruplicacao-linha-norte')}
                         strokeLinecap="round"
                         strokeDasharray="6 6"
-                        className="transition-all duration-700"
+                        className={getInteractivePathClassName('quadruplicacao-linha-norte')}
+                        onMouseEnter={() => setHoveredPath('quadruplicacao-linha-norte')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('quadruplicacao-linha-norte')}
+                    />
+
+                    {/* LAV Porto-Vigo Paths */}
+                    <path
+                        d="M 315,765 L 295,745 M 345,665 L 320,595 L 310,515"
+                        fill="none"
+                        stroke={getPathColor('lav-porto-vigo-fase-1')}
+                        strokeWidth={getInteractivePathStrokeWidth('lav-porto-vigo-fase-1')}
+                        strokeLinecap="round"
+                        className={getInteractivePathClassName('lav-porto-vigo-fase-1')}
+                        onMouseEnter={() => setHoveredPath('lav-porto-vigo-fase-1')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('lav-porto-vigo-fase-1')}
+                    />
+
+                    <path
+                        d="M 295,745 L 320,685"
+                        fill="none"
+                        stroke={getPathColor('lav-porto-vigo-fase-2')}
+                        strokeWidth={getInteractivePathStrokeWidth('lav-porto-vigo-fase-2')}
+                        strokeLinecap="round"
+                        className={getInteractivePathClassName('lav-porto-vigo-fase-2')}
+                        onMouseEnter={() => setHoveredPath('lav-porto-vigo-fase-2')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('lav-porto-vigo-fase-2')}
                     />
 
                     {/* LAV Lisboa-Madrid Paths */}
@@ -352,40 +639,57 @@ function MainApp({ lang, setLang }) {
                         d="M 135,1470 L 150,1490"
                         fill="none"
                         stroke={getPathColor('lav-lisboa-madrid-terceira-travessia')}
-                        strokeWidth={getStrokeWidth('lav-lisboa-madrid-terceira-travessia')}
+                        strokeWidth={getInteractivePathStrokeWidth('lav-lisboa-madrid-terceira-travessia')}
                         strokeLinecap="round"
-                        className="transition-all duration-700"
+                        className={getInteractivePathClassName('lav-lisboa-madrid-terceira-travessia')}
+                        onMouseEnter={() => setHoveredPath('lav-lisboa-madrid-terceira-travessia')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('lav-lisboa-madrid-terceira-travessia')}
                     />
 
                     <path
                         d="M 150,1490 L 220,1490 L 280,1510 L 340,1530 L 400,1550"
                         fill="none"
                         stroke={getPathColor('lav-lisboa-madrid-barreiro-evora')}
-                        strokeWidth={getStrokeWidth('lav-lisboa-madrid-barreiro-evora')}
+                        strokeWidth={getInteractivePathStrokeWidth('lav-lisboa-madrid-barreiro-evora')}
                         strokeLinecap="round"
-                        className="transition-all duration-700"
+                        className={getInteractivePathClassName('lav-lisboa-madrid-barreiro-evora')}
+                        onMouseEnter={() => setHoveredPath('lav-lisboa-madrid-barreiro-evora')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('lav-lisboa-madrid-barreiro-evora')}
                     />
 
                     <path
                         d="M 400,1550 L 500,1520 L 600,1472"
                         fill="none"
                         stroke={getPathColor('lav-lisboa-madrid-duplicacao-evora-elvas')}
-                        strokeWidth={getStrokeWidth('lav-lisboa-madrid-duplicacao-evora-elvas')}
+                        strokeWidth={getInteractivePathStrokeWidth('lav-lisboa-madrid-duplicacao-evora-elvas')}
                         strokeLinecap="round"
-                        className="transition-all duration-700"
+                        className={getInteractivePathClassName('lav-lisboa-madrid-duplicacao-evora-elvas')}
+                        onMouseEnter={() => setHoveredPath('lav-lisboa-madrid-duplicacao-evora-elvas')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('lav-lisboa-madrid-duplicacao-evora-elvas')}
                     />
 
                     <path
                         d="M 600,1472 L 620,1472"
                         fill="none"
                         stroke={getPathColor('lav-lisboa-madrid-ligacao-transfonteiriça')}
-                        strokeWidth={getStrokeWidth('lav-lisboa-madrid-ligacao-transfonteiriça')}
+                        strokeWidth={getInteractivePathStrokeWidth('lav-lisboa-madrid-ligacao-transfonteiriça')}
                         strokeLinecap="round"
-                        className="transition-all duration-700"
+                        className={getInteractivePathClassName('lav-lisboa-madrid-ligacao-transfonteiriça')}
+                        onMouseEnter={() => setHoveredPath('lav-lisboa-madrid-ligacao-transfonteiriça')}
+                        onMouseLeave={() => setHoveredPath(null)}
+                        onClick={() => goToSectionFromMap('lav-lisboa-madrid-ligacao-transfonteiriça')}
                     />
 
                     {/* Central Status Traffic Light */}
-                    <g className={`transition-all duration-500 ${isMobile || activeSection === 'sinalizacao-telecomunicacoes' || activeSection === 'comboios' ? 'opacity-100' : 'opacity-30'}`}>
+                    <g
+                        className={`transition-all duration-500 cursor-pointer ${isMobile || activeSection === 'sinalizacao-telecomunicacoes' || activeSection === 'comboios' || hoveredSignal === 'sinalizacao-telecomunicacoes' ? 'opacity-100' : 'opacity-30'}`}
+                        onMouseEnter={() => setHoveredSignal('sinalizacao-telecomunicacoes')}
+                        onMouseLeave={() => setHoveredSignal(null)}
+                        onClick={() => goToSectionFromMap('sinalizacao-telecomunicacoes')}
+                    >
                         {/* Pole */}
                         <rect x={236} y={1050} width="20" height="80" fill="#2c3e50" stroke="#1a252f" strokeWidth="1" rx="2" />
                         
@@ -403,7 +707,12 @@ function MainApp({ lang, setLang }) {
                     </g>
 
                     {/* Lisboa-Madrid Status Traffic Light */}
-                    <g className={`transition-all duration-500 ${isMobile || activeSection === 'lav-lisboa-madrid-sinalizacao-telecomunicacoes' || activeSection === 'comboios' ? 'opacity-100' : 'opacity-30'}`}>
+                    <g
+                        className={`transition-all duration-500 cursor-pointer ${isMobile || activeSection === 'lav-lisboa-madrid-sinalizacao-telecomunicacoes' || activeSection === 'comboios' || hoveredSignal === 'lav-lisboa-madrid-sinalizacao-telecomunicacoes' ? 'opacity-100' : 'opacity-30'}`}
+                        onMouseEnter={() => setHoveredSignal('lav-lisboa-madrid-sinalizacao-telecomunicacoes')}
+                        onMouseLeave={() => setHoveredSignal(null)}
+                        onClick={() => goToSectionFromMap('lav-lisboa-madrid-sinalizacao-telecomunicacoes')}
+                    >
                         {/* Pole */}
                         <rect x={240} y={1520} width="20" height="80" fill="#2c3e50" stroke="#1a252f" strokeWidth="1" rx="2" />
                         
@@ -420,17 +729,27 @@ function MainApp({ lang, setLang }) {
                         {shouldShowLisboaMadridLight('last') && <circle cx={250} cy={1585} r="6" fill={getLisboaMadridSignalingStatusColor()} filter="url(#glow)" />}
                     </g>
 
-                    <MapStation cx={315} cy={765} label="Campanhã" isActive={window.innerWidth < 768 || activeSection === 'ppp1'} />
-                    <MapStation cx={310} cy={785} label="Santo Ovídio" isActive={window.innerWidth < 768 || activeSection === 'ppp1'} />
-                    <MapStation cx={275} cy={920} label="Aveiro" isActive={window.innerWidth < 768 || activeSection === 'ppp1'} />
-                    <MapStation cx={315} cy={1055} label="Coimbra-B" isActive={window.innerWidth < 768 || activeSection === 'ppp2'} />
-                    <MapStation cx={280} cy={1200} label="Leiria" isActive={window.innerWidth < 768 || activeSection === 'ppp3'} />
-                    <MapStation cx={135} cy={1470} label="Lisboa-Oriente" isActive={window.innerWidth < 768 || activeSection === 'quadruplicacao-linha-norte' || activeSection === 'lav-lisboa-madrid-terceira-travessia'}  labelOffsetY={-6} />
-                    
-                    {/* LAV Lisboa-Madrid Stations */}
-                    <MapStation cx={220} cy={1490} label="Aeroporto Luís de Camões" isActive={window.innerWidth < 768 || activeSection === 'lav-lisboa-madrid-barreiro-evora'} labelOffsetY={-6} />
-                    <MapStation cx={400} cy={1550} label="Évora" isActive={window.innerWidth < 768 || activeSection === 'lav-lisboa-madrid-barreiro-evora' || activeSection === 'lav-lisboa-madrid-duplicacao-evora-elvas'} labelOffsetY={10} />
-                    <MapStation cx={600} cy={1472} label="Elvas-Caia" isActive={window.innerWidth < 768 || activeSection === 'lav-lisboa-madrid-duplicacao-evora-elvas' || activeSection === 'lav-lisboa-madrid-ligacao-transfonteiriça'} labelOffsetY={14} />
+                    {/* Stations layer kept last so dots/labels stay above all paths and symbols */}
+                    <g>
+                        <MapStation cx={315} cy={765} label="Campanhã" isActive={window.innerWidth < 768 || activeSection === 'ppp1'} />
+                        <MapStation cx={310} cy={785} label="Santo Ovídio" isActive={window.innerWidth < 768 || activeSection === 'ppp1'} />
+                        <MapStation cx={275} cy={920} label="Aveiro" isActive={window.innerWidth < 768 || activeSection === 'ppp1'} />
+                        <MapStation cx={315} cy={1055} label="Coimbra-B" isActive={window.innerWidth < 768 || activeSection === 'ppp2'} />
+                        <MapStation cx={280} cy={1200} label="Leiria" isActive={window.innerWidth < 768 || activeSection === 'ppp3'} />
+                        <MapStation cx={135} cy={1470} label="Lisboa-Oriente" isActive={window.innerWidth < 768 || activeSection === 'quadruplicacao-linha-norte' || activeSection === 'lav-lisboa-madrid-terceira-travessia'}  labelOffsetY={-6} />
+
+                        {/* LAV Porto-Vigo Stations */}
+                        <MapStation cx={295} cy={745} label="Aeroporto Francisco Sá Carneiro" isActive={window.innerWidth < 768 || activeSection === 'lav-porto-vigo-fase-1' || activeSection === 'lav-porto-vigo-fase-2'} labelOffsetY={-8} />
+                        <MapStation cx={320} cy={685} label="Nine" isActive={window.innerWidth < 768 || activeSection === 'lav-porto-vigo-fase-2'} labelOffsetY={8} />
+                        <MapStation cx={345} cy={665} label="Braga" isActive={window.innerWidth < 768 || activeSection === 'lav-porto-vigo-fase-1'} labelOffsetY={-8} />
+                        <MapStation cx={320} cy={595} label="Ponte de Lima" isActive={window.innerWidth < 768 || activeSection === 'lav-porto-vigo-fase-1'} labelOffsetY={-6} />
+                        <MapStation cx={310} cy={515} label="Valença" isActive={window.innerWidth < 768 || activeSection === 'lav-porto-vigo-fase-1'} labelOffsetY={-6} />
+
+                        {/* LAV Lisboa-Madrid Stations */}
+                        <MapStation cx={220} cy={1490} label="Aeroporto Luís de Camões" isActive={window.innerWidth < 768 || activeSection === 'lav-lisboa-madrid-barreiro-evora'} labelOffsetY={-6} />
+                        <MapStation cx={400} cy={1550} label="Évora" isActive={window.innerWidth < 768 || activeSection === 'lav-lisboa-madrid-barreiro-evora' || activeSection === 'lav-lisboa-madrid-duplicacao-evora-elvas'} labelOffsetY={10} />
+                        <MapStation cx={600} cy={1472} label="Elvas-Caia" isActive={window.innerWidth < 768 || activeSection === 'lav-lisboa-madrid-duplicacao-evora-elvas' || activeSection === 'lav-lisboa-madrid-ligacao-transfonteiriça'} labelOffsetY={14} />
+                    </g>
                 </svg>
 
                     <div className="md:hidden absolute bottom-4 right-4 animate-bounce text-slate-400 bg-white p-2 rounded-full shadow">
@@ -456,68 +775,95 @@ function MainApp({ lang, setLang }) {
             {/* RIGHT: Scrollable Content Area */}
             <div
                 ref={scrollContainerRef}
-                className="w-full md:w-1/2 h-full overflow-y-auto scroll-smooth bg-white scroller"
+                className="w-full md:w-1/2 h-full md:overflow-y-auto scroll-smooth bg-white scroller"
             >
                 <div className="hidden md:block h-8 bg-white"></div>
 
-                <div className="space-y-4 px-4 md:px-6 pb-10">
-                    {chapters.map((chapter) => {
-                        const isOpen = openChapters.includes(chapter.id);
-                        return (
-                            <div
-                                ref={(el) => {
-                                    if (el) chapterRefs.current[chapter.id] = el;
-                                }}
-                                key={chapter.id}
-                                className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm"
+                <div className="px-4 md:px-6 pb-10">
+                    <div className="sticky top-0 z-[5] md:z-30 bg-white/95 backdrop-blur-sm border-b border-slate-200 pt-4 pb-3 relative">
+                        <div ref={tabMenuContainerRef} className="2xl:hidden">
+                            <button
+                                type="button"
+                                onClick={() => setIsTabMenuOpen((prev) => !prev)}
+                                className="w-full flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm"
                             >
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setActiveChapter(chapter.id);
-                                        setOpenChapters(prev => 
-                                            prev.includes(chapter.id) 
-                                                ? prev.filter(id => id !== chapter.id)
-                                                : [...prev, chapter.id]
-                                        );
-                                    }}
-                                    className="w-full flex items-center justify-between gap-4 p-5 text-left hover:bg-slate-50/70 transition-colors"
-                                >
-                                    <div>
-                                        <h2 className="text-lg md:text-xl font-black text-slate-900">
-                                            {chapter.title}
-                                        </h2>
-                                    </div>
-                                    <span className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}>
-                                        <ChevronDown size={18} />
-                                    </span>
-                                </button>
+                                <span className="text-sm font-bold text-slate-800 truncate">
+                                    {activeChapterData?.title}
+                                </span>
+                                <span className={`text-slate-500 transition-transform ${isTabMenuOpen ? 'rotate-180' : ''}`}>
+                                    <ChevronDown size={16} />
+                                </span>
+                            </button>
 
-                                <div className={`border-t border-slate-100 bg-white overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[10000px]' : 'max-h-0'}`}>
-                                    {chapter.sections.length > 0 ? (
-                                            <div>
-                                                {chapter.sections.map((section, idx) => (
-                                                    <Section
-                                                        key={section.id}
-                                                        data={section}
-                                                        isActive={activeSection === section.id}
-                                                        texts={{ lang, ...t }}
-                                                        isFirst={idx === 0}
-                                                        isLast={idx === chapter.sections.length - 1}
-                                                    />
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="p-6 text-sm text-slate-500">
-                                                {lang === 'pt'
-                                                    ? 'Em breve adicionamos detalhes sobre este projeto.'
-                                                    : 'Details for this project are coming soon.'}
-                                            </div>
-                                        )}
+                            {isTabMenuOpen && (
+                                <div className="absolute left-0 right-0 top-full mt-2 rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden">
+                                    {chapters.map((chapter) => {
+                                        const isActiveTab = chapter.id === activeChapterData?.id;
+                                        return (
+                                            <button
+                                                key={chapter.id}
+                                                type="button"
+                                                onClick={() => setActiveTab(chapter.id)}
+                                                className={`w-full px-4 py-3 text-left text-sm border-b border-slate-100 last:border-b-0 transition-colors ${
+                                                    isActiveTab
+                                                        ? 'bg-slate-900 text-white font-semibold'
+                                                        : 'text-slate-700 hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                {chapter.title}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
+                            )}
+                        </div>
+
+                        <div className="hidden 2xl:flex w-full gap-2">
+                            {chapters.map((chapter) => {
+                                const isActiveTab = chapter.id === activeChapterData?.id;
+                                const tabWeight = Math.max(chapter.title.length, 12);
+                                return (
+                                    <button
+                                        key={chapter.id}
+                                        type="button"
+                                        onClick={() => setActiveTab(chapter.id)}
+                                        style={{ flexGrow: tabWeight, flexBasis: 0 }}
+                                        className={`min-w-0 px-4 py-2.5 rounded-full border text-sm font-bold transition-all ${
+                                            isActiveTab
+                                                ? 'bg-slate-900 text-white border-slate-900 shadow-md'
+                                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <span className="block truncate text-center">{chapter.title}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="mt-4 bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                        {activeChapterData?.sections.length > 0 ? (
+                            <div>
+                                {activeChapterData.sections.map((section, idx) => (
+                                    <Section
+                                        key={section.id}
+                                        data={section}
+                                        isActive={activeSection === section.id}
+                                        texts={{ lang, ...t }}
+                                        isFirst={idx === 0}
+                                        isLast={idx === activeChapterData.sections.length - 1}
+                                        idx={idx}
+                                    />
+                                ))}
                             </div>
-                        );
-                    })}
+                        ) : (
+                            <div className="p-6 text-sm text-slate-500">
+                                {lang === 'pt'
+                                    ? 'Em breve adicionamos detalhes sobre este projeto.'
+                                    : 'Details for this project are coming soon.'}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Complete Gantt Chart Overview */}
