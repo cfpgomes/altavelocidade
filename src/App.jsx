@@ -6,6 +6,7 @@ import MapStation from './components/MapStation';
 import TimelineDetail from './components/TimelineDetail';
 import SubmitUpdates from './components/SubmitUpdates';
 import CompleteGanttChart from './components/CompleteGanttChart';
+import ComboiosMapView from './components/ComboiosMapView';
 import { getContentByLang, STATUS_CONFIG} from './data';
 
 import { Train, Globe, ChevronDown, Send } from './components/Icons'; // Adjusted casing to match the file name
@@ -18,7 +19,9 @@ function MainApp({ lang, setLang }) {
     const [hoveredSignal, setHoveredSignal] = useState(null);
     const scrollContainerRef = useRef(null);
     const tabMenuContainerRef = useRef(null);
+    const comboiosHeaderRef = useRef(null);
     const hasScrolledToHash = useRef(false);
+    const [comboiosHeaderHeight, setComboiosHeaderHeight] = useState(0);
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -324,6 +327,43 @@ function MainApp({ lang, setLang }) {
         `transition-all duration-700 cursor-pointer ${hoveredPath === sectionId ? 'brightness-110' : 'hover:brightness-110'}`
     );
 
+    const isComboiosMapView = activeChapter === 'comboios-portugal' || activeSection === 'comboios';
+
+    useEffect(() => {
+        if (!isComboiosMapView) return;
+
+        const updateHeaderHeight = () => {
+            const headerEl = comboiosHeaderRef.current;
+            if (!headerEl) {
+                setComboiosHeaderHeight(0);
+                return;
+            }
+
+            // Reserve from the top of the map container down to the bottom of the title block.
+            setComboiosHeaderHeight(headerEl.offsetTop + headerEl.offsetHeight);
+        };
+
+        updateHeaderHeight();
+
+        if (typeof ResizeObserver === 'undefined') {
+            window.addEventListener('resize', updateHeaderHeight);
+            return () => window.removeEventListener('resize', updateHeaderHeight);
+        }
+
+        const observer = new ResizeObserver(updateHeaderHeight);
+
+        if (comboiosHeaderRef.current) {
+            observer.observe(comboiosHeaderRef.current);
+        }
+
+        window.addEventListener('resize', updateHeaderHeight);
+
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', updateHeaderHeight);
+        };
+    }, [isComboiosMapView]);
+
     return (
         <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-slate-50 font-sans md:overflow-hidden">
 
@@ -332,7 +372,7 @@ function MainApp({ lang, setLang }) {
                 
                 {/* Map Container */}
                 <div className="h-[80vh] md:h-full relative flex items-center justify-center pt-24 md:pt-6 px-1 md:px-6 py-6">
-                    <div className="absolute top-6 left-6 pr-6 z-20">
+                    <div ref={comboiosHeaderRef} className="absolute top-6 left-6 pr-6 z-20">
                         <div className="flex items-center gap-2 mb-1">
                             <div className="bg-slate-900 text-white p-1.5 rounded">
                                 <Train size={16} />
@@ -361,20 +401,27 @@ function MainApp({ lang, setLang }) {
                     </div>
 
                     {/* Legend - Desktop only (absolute positioned) */}
-                    <div className="hidden md:block absolute bottom-6 left-6 z-20 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-slate-200/50 max-w-[200px]">
-                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 border-b pb-1">{t.legendTitle}</h4>
-                        <div className="space-y-1.5">
-                            <LegendItem statusKey="s1" texts={{ lang }} />
-                            <LegendItem statusKey="s2" texts={{ lang }} />
-                            <LegendItem statusKey="s3" texts={{ lang }} />
-                            <LegendItem statusKey="s4" texts={{ lang }} />
-                            <LegendItem statusKey="s5" texts={{ lang }} />
-                            <LegendItem statusKey="s6" texts={{ lang }} />
-                            <LegendItem statusKey="s7" texts={{ lang }} />
+                    {!isComboiosMapView && (
+                        <div className="hidden md:block absolute bottom-6 left-6 z-20 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-slate-200/50 max-w-[200px]">
+                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 border-b pb-1">{t.legendTitle}</h4>
+                            <div className="space-y-1.5">
+                                <LegendItem statusKey="s1" texts={{ lang }} />
+                                <LegendItem statusKey="s2" texts={{ lang }} />
+                                <LegendItem statusKey="s3" texts={{ lang }} />
+                                <LegendItem statusKey="s4" texts={{ lang }} />
+                                <LegendItem statusKey="s5" texts={{ lang }} />
+                                <LegendItem statusKey="s6" texts={{ lang }} />
+                                <LegendItem statusKey="s7" texts={{ lang }} />
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    <svg viewBox="-100 200 1100 1950" className="h-full w-full max-w-none md:max-w-lg drop-shadow-2xl">
+                    <div
+                        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-700 ease-in-out ${
+                            isComboiosMapView ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                        }`}
+                    >
+                        <svg viewBox="-100 200 1100 1950" className="h-full w-full max-w-none md:max-w-lg drop-shadow-2xl">
                     <defs>
                         <filter id="glow">
                             <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
@@ -750,26 +797,39 @@ function MainApp({ lang, setLang }) {
                         <MapStation cx={400} cy={1550} label="Évora" isActive={window.innerWidth < 768 || activeSection === 'lav-lisboa-madrid-barreiro-evora' || activeSection === 'lav-lisboa-madrid-duplicacao-evora-elvas'} labelOffsetY={10} />
                         <MapStation cx={600} cy={1472} label="Elvas-Caia" isActive={window.innerWidth < 768 || activeSection === 'lav-lisboa-madrid-duplicacao-evora-elvas' || activeSection === 'lav-lisboa-madrid-ligacao-transfonteiriça'} labelOffsetY={14} />
                     </g>
-                </svg>
-
-                    <div className="md:hidden absolute bottom-4 right-4 animate-bounce text-slate-400 bg-white p-2 rounded-full shadow">
-                        <ChevronDown size={20} />
+                        </svg>
                     </div>
+
+                    <div
+                        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-700 ease-in-out ${
+                            isComboiosMapView ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                        }`}
+                    >
+                        <ComboiosMapView lang={lang} topReserve={comboiosHeaderHeight} />
+                    </div>
+
+                    {!isComboiosMapView && (
+                        <div className="md:hidden absolute bottom-4 right-4 animate-bounce text-slate-400 bg-white p-2 rounded-full shadow">
+                            <ChevronDown size={20} />
+                        </div>
+                    )}
                 </div>
 
                 {/* Legend - Mobile only (below map) */}
-                <div className="md:hidden bg-white/90 backdrop-blur-sm p-4 mx-4 mb-4 rounded-xl shadow-lg border border-slate-200/50">
-                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 border-b pb-1">{t.legendTitle}</h4>
-                    <div className="space-y-1.5">
-                        <LegendItem statusKey="s1" texts={{ lang }} />
-                        <LegendItem statusKey="s2" texts={{ lang }} />
-                        <LegendItem statusKey="s3" texts={{ lang }} />
-                        <LegendItem statusKey="s4" texts={{ lang }} />
-                        <LegendItem statusKey="s5" texts={{ lang }} />
-                        <LegendItem statusKey="s6" texts={{ lang }} />
-                        <LegendItem statusKey="s7" texts={{ lang }} />
+                {!isComboiosMapView && (
+                    <div className="md:hidden bg-white/90 backdrop-blur-sm p-4 mx-4 mb-4 rounded-xl shadow-lg border border-slate-200/50">
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 border-b pb-1">{t.legendTitle}</h4>
+                        <div className="space-y-1.5">
+                            <LegendItem statusKey="s1" texts={{ lang }} />
+                            <LegendItem statusKey="s2" texts={{ lang }} />
+                            <LegendItem statusKey="s3" texts={{ lang }} />
+                            <LegendItem statusKey="s4" texts={{ lang }} />
+                            <LegendItem statusKey="s5" texts={{ lang }} />
+                            <LegendItem statusKey="s6" texts={{ lang }} />
+                            <LegendItem statusKey="s7" texts={{ lang }} />
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             {/* RIGHT: Scrollable Content Area */}
