@@ -219,21 +219,21 @@ export const CONTENT = {
         {
             id: 'quadruplicacao-linha-norte',
             title: { pt: "Quadruplicação Linha do Norte: Alverca - Castanheira do Ribatejo", en: "Quadrupling of the Northern Line: Alverca - Castanheira do Ribatejo" },
-            statusKey: 's2',
+            statusKey: 's3',
             description: {
-                pt: "A quadruplicação da Linha do Norte entre Alverca e Castanheira do Ribatejo permite acomodar o tráfego de e para a LAV Porto-Lisboa. O Estudo de Impacte Ambiental está em consulta pública até março de 2026.",
-                en: "The quadrupling of the Northern Line between Alverca and Castanheira do Ribatejo allows for accommodating traffic to and from the Porto-Lisbon HSR. The Environmental Impact Study is in public consultation until March 2026."
+                pt: "A quadruplicação da Linha do Norte entre Alverca e Castanheira do Ribatejo permite acomodar o tráfego de e para a LAV Porto-Lisboa. O projeto já recebeu a Declaração de Impacte Ambiental favorável, estando agora a aguardar o lançamento do concurso para as obras.",
+                en: "The quadrupling of the Northern Line between Alverca and Castanheira do Ribatejo allows for accommodating traffic to and from the Porto-Lisbon HSR. The project has already received a favorable Environmental Impact Statement and is now awaiting the launch of the construction tender."
             },
             details: [
                 { label: { pt: "Extensão", en: "Length" }, value: "12 km" },
-                { label: { pt: "Investimento", en: "Investment" }, value: "N/A" },
+                { label: { pt: "Investimento", en: "Investment" }, value: "388 M€" },
                 { label: { pt: "Responsável", en: "Responsible Party" }, value: "Infraestruturas de Portugal" }
             ],
             gantt: {
                 initial: { range: dateRange(2026, 2032) },
                 actual: [
                     { range: dateRange(10, 2024, 12, 2025), statusKey: 's1', source: "https://participa.pt/pt/consulta/modernizacao-do-troco-entre-alverca-e-castanheira-do-ribatejo", tooltip: { pt: "Estudo de Impacte Ambiental", en: "Environmental Impact Assessment" } },
-                    { range: dateRange(1, 2026, 4, 2026), statusKey: 's2', source: "https://participa.pt/pt/consulta/modernizacao-do-troco-entre-alverca-e-castanheira-do-ribatejo", tooltip: { pt: "Declaração de Impacte Ambiental", en: "Environmental Impact Statement" } },
+                    { range: dateRange(1, 2026, 5, 2026), statusKey: 's2', source: "https://www.publico.pt/2026/05/22/local/noticia/ambiente-aprova-quadruplicacao-linha-alverca-castanheira-obras-podem-avancar-2175654", tooltip: { pt: "Declaração de Impacte Ambiental", en: "Environmental Impact Statement" } },
                     { range: dateRange(7, 2026, 12, 2026), statusKey: 's3', source: "#", tooltip: { pt: "Concurso Público (Previsão)", en: "Public Tender (Forecast)" } },
                     { range: dateRange(1, 2027, 3, 2027), statusKey: 's4', source: "#", tooltip: { pt: "Propostas em Avaliação (Previsão)", en: "Proposals Under Evaluation (Forecast)" } },
                     { range: dateRange(4, 2027, 6, 2027), statusKey: 's5', source: "#", tooltip: { pt: "Assinatura do Contrato (Previsão)", en: "Contract Signature (Forecast)" } },
@@ -242,7 +242,10 @@ export const CONTENT = {
                 ]
             },
             timeline: [
-                { date: date(9, 2022), label: { pt: "Consulta Pública do Estudo de Impacte Ambiental da Modernização do Troço entre Alverca e Castanheira do Ribatejo", en: "Public Consultation of the Environmental Impact Study for the Modernization of the Section between Alverca and Castanheira do Ribatejo" }, link: "https://participa.pt/pt/consulta/modernizacao-do-troco-entre-alverca-e-castanheira-do-ribatejo" }
+                { date: date(9, 2022), label: { pt: "Consulta Pública do Estudo de Impacte Ambiental da Modernização do Troço entre Alverca e Castanheira do Ribatejo", en: "Public Consultation of the Environmental Impact Study for the Modernization of the Section between Alverca and Castanheira do Ribatejo" }, link: "https://participa.pt/pt/consulta/modernizacao-do-troco-entre-alverca-e-castanheira-do-ribatejo" },
+                {
+                    date: date(5, 2026), label: { pt: "Declaração de Impacte Ambiental aprovada para a quadruplicação da Linha do Norte entre Alverca e Castanheira do Ribatejo", en: "Environmental Impact Statement approved for the quadrupling of the Northern Line between Alverca and Castanheira do Ribatejo" }, link: "https://www.publico.pt/2026/05/22/local/noticia/ambiente-aprova-quadruplicacao-linha-alverca-castanheira-obras-podem-avancar-2175654"
+                }
             ]
         },
         {
@@ -299,25 +302,26 @@ export const CONTENT = {
             title: { pt: "Comboios de Portugal: Material Circulante", en: "Comboios de Portugal: Rolling Stock" },
             statusKey: 's3',
             description: {
-                pt: "A Comboios de Portugal vai adquirir 12 unidades de comboios de Alta Velocidade para operar na nova linha, com mais 8 unidades como opção. Já foi autorizada a despesa para esta aquisição.",
-                en: "Comboios de Portugal will acquire 12 high-speed train units to operate on the new line, with an additional 8 units as an option. The expenditure for this acquisition has already been authorized."
+                pt: "A Comboios de Portugal lançou um concurso de aquisição para 12 unidades de Comboios de Alta Velocidade para operar na nova linha, com mais 8 unidades como opção. Cada comboio, com 200 metros e mais de 500 lugares, vai custar até 42M€. ",
+                en: "Comboios de Portugal has launched a procurement tender for 12 high-speed train units to operate on the new line, with an additional 8 units as an option. Each train, measuring 200 meters and offering over 500 seats, will cost up to 42M€."
             },
             details: [
                 { label: { pt: "Quantidade", en: "Quantity" }, value: "12 Unidades (+8 Opção)" },
-                { label: { pt: "Investimento", en: "Investment" }, value: "~584M€" },
+                { label: { pt: "Investimento", en: "Investment" }, value: "~504M€" },
                 { label: { pt: "Velocidade Máxima", en: "Maximum Speed" }, value: "300 km/h" }
             ],
             gantt: {
                 initial: { range: dateRange(2026, 2030) },
                 actual: [
-                    { range: dateRange(1, 2026, 6, 2026), statusKey: 's3', source: "https://eco.sapo.pt/2026/01/22/cp-vai-ter-ate-20-comboios-para-a-alta-velocidade-investimento-soma-584-milhoes/", tooltip: { pt: "Concurso Público CP", en: "CP Public Tender" } },
-                    { range: dateRange(7, 2026, 12, 2026), statusKey: 's5', source: "#", tooltip: { pt: "Adjudicação / Contrato (Previsão)", en: "Adjudication / Contract (Forecast)" } },
-                    { range: dateRange(1, 2027, 12, 2030), statusKey: 's6', source: "#", tooltip: { pt: "Fabrico e Homologação (Previsão)", en: "Manufacturing and Homologation (Forecast)" } },
-                    { range: dateRange(1, 2031, 6, 2031), statusKey: 's7', source: "#", tooltip: { pt: "Entrada em Serviço (Previsão)", en: "Service Entry (Forecast)" } }
+                    { range: dateRange(5, 2026, 10, 2026), statusKey: 's3', source: "https://eco.sapo.pt/2026/05/20/cada-comboio-da-alta-velocidade-vai-custar-42-milhoes-a-cp-revisao-de-preco-tem-travao-de-10/", tooltip: { pt: "Concurso Público CP", en: "CP Public Tender" } },
+                    { range: dateRange(11, 2026, 1, 2027), statusKey: 's5', source: "#", tooltip: { pt: "Adjudicação / Contrato (Previsão)", en: "Adjudication / Contract (Forecast)" } },
+                    { range: dateRange(4, 2027, 1, 2032), statusKey: 's6', source: "#", tooltip: { pt: "Fabrico e Homologação (Previsão)", en: "Manufacturing and Homologation (Forecast)" } },
+                    { range: dateRange(4, 2032, 12, 2032), statusKey: 's7', source: "#", tooltip: { pt: "Entrada em Serviço (Previsão)", en: "Service Entry (Forecast)" } }
                 ]
             },
             timeline: [
-                { date: date(1, 2026), label: { pt: "CP – Comboios de Portugal foi autorizada a comprar até 20 automotoras para a LAV, num investimento de 584 milhões de euros", en: "CP – Comboios de Portugal was authorized to purchase up to 20 train units for the LAV, with an investment of 584 million euros" }, link: "https://www.portugal.gov.pt/pt/gc25/comunicacao/noticia?i=alta-velocidade-governo-avanca-com-compra-de-20-comboios-e-lanca-concurso-para-troco-oia-soure" }
+                { date: date(1, 2026), label: { pt: "CP – Comboios de Portugal foi autorizada a comprar até 20 automotoras para a LAV, num investimento de 584 milhões de euros", en: "CP – Comboios de Portugal was authorized to purchase up to 20 train units for the LAV, with an investment of 584 million euros" }, link: "https://www.portugal.gov.pt/pt/gc25/comunicacao/noticia?i=alta-velocidade-governo-avanca-com-compra-de-20-comboios-e-lanca-concurso-para-troco-oia-soure" },
+                { date: date(5, 2026), label: { pt: "Lançamento do Concurso Público para a Aquisição de Material Circulante para a LAV", en: "Launch of the Public Tender for the Acquisition of Rolling Stock for the LAV"}, link: "https://eco.sapo.pt/2026/05/20/cada-comboio-da-alta-velocidade-vai-custar-42-milhoes-a-cp-revisao-de-preco-tem-travao-de-10/" }
             ]
         },
         {
