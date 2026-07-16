@@ -100,8 +100,8 @@ export const CONTENT = {
     },
     gantt: {
         initial: {
-            pt: "Calendário Planeado para Adjudicação e Obras (2025)",
-            en: "Planned Schedule for Award & Construction (2025)"
+            pt: "Calendário Originalmente Planeado para Adjudicação e Obras (2025)",
+            en: "Originally Planned Schedule for Award & Construction (2025)"
         },
         actual: {
             pt: "Calendário Atual",
@@ -118,8 +118,8 @@ export const CONTENT = {
             title: { pt: "PPP1: Porto - Oiã", en: "PPP1: Porto - Oiã" },
             statusKey: 's5',
             description: {
-                pt: "O troço Campanhã-Oiã foi adjudicado à AVAN Norte em Julho de 2025. O RECAPE, submetido em Outubro, propunha alterar a estação subterrânea de Santo Ovídio para Vilar do Paraíso, à superfície, sendo chumbado pela APA por violar o Estudo Prévio. Atualmente (Jan 2026), o consórcio prepara um novo Projeto de Execução e respetivo RECAPE que se aproximam do Estudo Prévio.",
-                en: "The section Campanhã-Oiã was awarded to AVAN Norte in July 2025. The RECAPE, submitted in October, proposed to change the underground station from Santo Ovídio to Vilar do Paraíso, at surface level, which was rejected by the APA for violating the Preliminary Study. Currently (Jan 2026), the consortium is preparing a new Execution Project and respective RECAPE that align with the Preliminary Study."
+                pt: "O troço Campanhã-Oiã foi adjudicado à AVAN Norte em Julho de 2025. O RECAPE, submetido em Outubro, propunha alterar a estação subterrânea de Santo Ovídio para Vilar do Paraíso, à superfície, sendo chumbado pela APA por violar o Estudo Prévio. O consórcio já entregou um novo RECAPE que respeita o Estudo Prévio, estando a aguardar aprovação da APA.",
+                en: "The section Campanhã-Oiã was awarded to AVAN Norte in July 2025. The RECAPE, submitted in October, proposed to change the underground station from Santo Ovídio to Vilar do Paraíso, at surface level, which was rejected by the APA for violating the Preliminary Study. The consortium has already submitted a new RECAPE that respects the Preliminary Study and is awaiting APA approval."
             },
             details: [
                 { label: { pt: "Extensão", en: "Length" }, value: "72 km" },
@@ -134,8 +134,8 @@ export const CONTENT = {
                     { range: dateRange(1, 2024, 7, 2024), statusKey: 's3', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: { pt: "Lançamento do Concurso Público Internacional", en: "International Public Tender Launch" } },
                     { range: dateRange(7, 2024, 12, 2024), statusKey: 's4', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: { pt: "Propostas em Avaliação", en: "Proposals Under Evaluation" } },
                     { range: dateRange(7, 2025, 10, 2025), statusKey: 's5', source: "https://www.infraestruturasdeportugal.pt/pt-pt/adjudicacao-da-concessao-da-linha-ferroviaria-de-alta-velocidade-entre-porto-campanha-e-oia", tooltip: { pt: "Assinatura do Contrato e RECAPE em preparação", en: "Contract Signature and RECAPE in Preparation" } },
-                    { range: dateRange(12, 2025, 3, 2026), statusKey: 's5', source: "https://eco.sapo.pt/2026/01/21/consorcio-da-mota-engil-vai-entregar-novo-projeto-para-tgv-em-gaia/", tooltip: { pt: "Novo RECAPE em preparação", en: "New RECAPE in Preparation" } },
-                    { range: dateRange(6, 2026, 7, 2030), statusKey: 's6', source: "#", tooltip: { pt: "Fase de Construção (Previsão)", en: "Construction Phase (Forecast)" } },
+                    { range: dateRange(12, 2025, 8, 2026), statusKey: 's5', source: "https://eco.sapo.pt/2026/01/21/consorcio-da-mota-engil-vai-entregar-novo-projeto-para-tgv-em-gaia/", tooltip: { pt: "Novo RECAPE em preparação", en: "New RECAPE in Preparation" } },
+                    { range: dateRange(8, 2026, 7, 2030), statusKey: 's6', source: "#", tooltip: { pt: "Fase de Construção (Previsão)", en: "Construction Phase (Forecast)" } },
                     { range: dateRange(7, 2030, 12, 2030), statusKey: 's7', source: "#", tooltip: { pt: "Entrada em Serviço (Previsão)", en: "Service Entry (Forecast)" } }
                 ]
             },
@@ -147,7 +147,8 @@ export const CONTENT = {
                 { date: date(11, 2025), label: { pt: "Síntese das mudanças polémicas propostas pela AVAN Norte, incluindo a deslocação da estação de Santo Ovídio para Vilar do Paraíso", en: "Summary of controversial changes proposed by AVAN Norte, including the relocation of Santo Ovídio station to Vilar do Paraíso" }, link: "https://www.jn.pt/pais/artigo/as-tres-principais-mudancas-ao-projeto-do-tgv-no-porto-e-em-gaia/18015424" },
                 { date: date(11, 2025), label: { pt: "Consulta pública ao RECAPE do troço Porto - Oiã com 259 participações", en: "Public consultation on the RECAPE for the Porto - Oiã section with 259 participations" }, link: "https://www.jornaldenegocios.pt/empresas/detalhe/consulta-publica-ao-relatorio-do-troco-porto-oia-da-linha-de-tgv-com-259-participacoes" },
                 { date: date(12, 2025), label: { pt: "Agência Portuguesa do Ambiente chumba alterações que a AVAN Norte queria fazer em Gaia e no Porto", en: "Portuguese Environment Agency rejects changes that AVAN Norte wanted to make in Gaia and Porto" }, link: "https://www.jornaldenegocios.pt/empresas/transportes/detalhe/20251222-140409-apa-chumba-alteracoes-que-o-consorcio-do-tgv-queria-fazer-em-gaia-e-no-porto" },
-                { date: date(1, 2026), label: { pt: "AVAN Norte prepara novo RECAPE e Projeto de Execução para o troço Porto - Oiã", en: "AVAN Norte prepares new RECAPE and Execution Project for the Porto - Oiã section" }, link: "https://eco.sapo.pt/2026/01/21/consorcio-da-mota-engil-vai-entregar-novo-projeto-para-tgv-em-gaia/" }
+                { date: date(1, 2026), label: { pt: "AVAN Norte prepara novo RECAPE e Projeto de Execução para o troço Porto - Oiã", en: "AVAN Norte prepares new RECAPE and Execution Project for the Porto - Oiã section" }, link: "https://eco.sapo.pt/2026/01/21/consorcio-da-mota-engil-vai-entregar-novo-projeto-para-tgv-em-gaia/" },
+                { date: date(6, 2026), label: { pt: "Consulta pública ao RECAPE do troço Porto - Oiã", en: "Public consultation on the RECAPE for the Porto - Oiã section" }, link: "https://participa.pt/pt/consulta/recape-linha-ferroviaria-de-alta-velocidade-troco-porto-campanha-a-oia-subtroco-4-e-subtroco-5" },
             ]
         },
         {
@@ -155,8 +156,8 @@ export const CONTENT = {
             title: { pt: "PPP2: Oiã - Soure", en: "PPP2: Oiã - Soure" },
             statusKey: 's3',
             description: {
-                pt: "O primeiro concurso para o troço Oiã-Soure ficou deserto em 2024, devido à exclusão da única proposta apresentada, pela AVAN Norte, que deslocava a estação de AV para fora da cidade de Coimbra. O concurso foi relançado em janeiro de 2026, com um caderno de encargos simplificado, com menos 11km e menos responsabilidades de manutenção. Prevê-se a adjudicação para o final de 2026.",
-                en: "The first tender for the Oiã-Soure section was unsuccessful in 2024 after rejecting the only proposal, from AVAN Norte, which relocated the high-speed station outside Coimbra. The tender was relaunched in January 2026 with simplified terms, 11km shorter and reduced maintenance responsibilities. Contract award is expected by end of 2026."
+                pt: "O primeiro concurso para o troço Oiã-Soure ficou deserto em 2024, devido à exclusão da única proposta apresentada, pela AVAN Norte, que deslocava a estação de AV para fora da cidade de Coimbra. O concurso foi relançado em janeiro de 2026, com um caderno de encargos simplificado, com menos 11km e menos responsabilidades de manutenção. Este novo concurso recebeu duas propostas. Prevê-se a adjudicação para o final de 2026.",
+                en: "The first tender for the Oiã-Soure section was unsuccessful in 2024 after rejecting the only proposal, from AVAN Norte, which relocated the high-speed station outside Coimbra. The tender was relaunched in January 2026 with simplified requirements, 11km shorter and reduced maintenance responsibilities. This new tender received two proposals. Contract award is expected by end of 2026."
             },
             details: [
                 { label: { pt: "Extensão", en: "Length" }, value: "61 km" },
@@ -170,9 +171,9 @@ export const CONTENT = {
                     { range: dateRange(6, 2023, 11, 2023), statusKey: 's2', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade/impacte-ambiental", tooltip: { pt: "Declaração de Impacte Ambiental (DIA) Aprovada", en: "Environmental Impact Statement (EIS) Approved" } },
                     { range: dateRange(7, 2024, 12, 2024), statusKey: 's3', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: { pt: "Lançamento do Concurso Público Internacional", en: "International Public Tender Launch" } },
                     { range: dateRange(1, 2025, 3, 2025), statusKey: 's4', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: { pt: "Exclusão da Única Proposta Apresentada", en: "Exclusion of the Only Proposal Submitted" } },
-                    { range: dateRange(1, 2026, 5, 2026), statusKey: 's3', source: "https://diariodarepublica.pt/dr/detalhe/anuncio-procedimento/1551-2026-1023994487", tooltip: { pt: "Relançamento do Concurso Público Internacional", en: "Relaunch of International Public Tender" } },
-                    { range: dateRange(5, 2026, 10, 2026), statusKey: 's4', source: "#", tooltip: { pt: "Propostas em Avaliação (Previsão)", en: "Proposals Under Evaluation (Forecast)" } },
-                    { range: dateRange(10, 2026, 12, 2026), statusKey: 's5', source: "#", tooltip: { pt: "Assinatura do Contrato (Previsão)", en: "Contract Signature (Forecast)" } },
+                    { range: dateRange(1, 2026, 7, 2026), statusKey: 's3', source: "https://diariodarepublica.pt/dr/detalhe/anuncio-procedimento/1551-2026-1023994487", tooltip: { pt: "Relançamento do Concurso Público Internacional", en: "Relaunch of International Public Tender" } },
+                    { range: dateRange(8, 2026, 11, 2026), statusKey: 's4', source: "#", tooltip: { pt: "Propostas em Avaliação (Previsão)", en: "Proposals Under Evaluation (Forecast)" } },
+                    { range: dateRange(11, 2026, 12, 2026), statusKey: 's5', source: "#", tooltip: { pt: "Assinatura do Contrato (Previsão)", en: "Contract Signature (Forecast)" } },
                     { range: dateRange(1, 2027, 1, 2031), statusKey: 's6', source: "#", tooltip: { pt: "Fase de Construção (Previsão)", en: "Construction Phase (Forecast)" } },
                     { range: dateRange(2, 2031, 7, 2031), statusKey: 's7', source: "#", tooltip: { pt: "Entrada em Serviço (Previsão)", en: "Service Entry (Forecast)" } }
                 ]
@@ -183,7 +184,8 @@ export const CONTENT = {
                 { date: date(12, 2024), label: { pt: "Câmara de Coimbra quer exclusão da única proposta, por considerar inaceitável a deslocação da estação LAV de Coimbra-B para Taveiro", en: "The municipality of Coimbra wants exclusion of the only proposal, considering the relocation of the LAV station from Coimbra-B to Taveiro unacceptable" }, link: "https://observador.pt/2025/02/17/camara-de-coimbra-quer-exclusao-de-proposta-de-alta-velocidade-e-novo-concurso/" },
                 { date: date(2, 2025), label: { pt: "Única proposta para o troço Oiã - Soure é excluída por não cumprir o caderno de encargos", en: "Only proposal for the Oiã - Soure section is excluded for not meeting the tender specifications" }, link: "https://www.jornaldenegocios.pt/empresas/transportes/detalhe/consorcio-da-mota-engil-excluido-do-concurso-para-o-segundo-troco-da-alta-velocidade" },
                 { date: date(4, 2025), label: { pt: "Novo concurso mantém a estação em Coimbra-B, reduz o troço em 11km, e reduz também outros encargos", en: "New tender maintains the station at Coimbra-B, shortens the section by 11km, and also reduces other responsibilities" }, link: "https://observador.pt/2025/04/23/novo-concurso-da-ppp2-do-tgv-mantem-estacao-em-coimbra-b-mas-reduz-encargos/" },
-                { date: date(1, 2026), label: { pt: "Relançamento do Concurso Público Internacional para o Troço Oiã - Soure", en: "Relaunch of the International Public Tender for the Oiã - Soure Section" }, link: "https://observador.pt/2026/01/22/alta-velocidade-entra-numa-nova-etapa-concreta-diz-infraestruturas-de-portugal/" }
+                { date: date(1, 2026), label: { pt: "Relançamento do Concurso Público Internacional para o Troço Oiã - Soure", en: "Relaunch of the International Public Tender for the Oiã - Soure Section" }, link: "https://observador.pt/2026/01/22/alta-velocidade-entra-numa-nova-etapa-concreta-diz-infraestruturas-de-portugal/" },
+                { date: date(7, 2026), label: { pt: "Duas propostas recebidas para o concurso do troço Oiã - Soure", en: "Two proposals received for the tender for the Oiã - Soure section" }, link: "https://eco.sapo.pt/2026/07/06/consorcios-da-mota-e-dst-disputam-segunda-ppp-da-alta-velocidade/" }
             ]
         },
         {
@@ -338,10 +340,10 @@ export const CONTENT = {
                 { label: { pt: "Concessionária", en: "Concessionaire" }, value: "N/A" }
             ],
             gantt: {
-                initial: { range: dateRange(2024, 2033) },
+                initial: { range: dateRange(2028, 2033) },
                 actual: [
-                    { range: dateRange(2, 2024, 4, 2026), statusKey: 's1', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: { pt: "Estudo Prévio e Estudo de Impacte Ambiental (Previsão)", en: "Preliminary Study and Environmental Impact Assessment (Forecast)" } },
-                    { range: dateRange(5, 2026, 12, 2026), statusKey: 's2', source: "#", tooltip: { pt: "Declaração de Impacte Ambiental (Previsão)", en: "Environmental Impact Statement (Forecast)" } },
+                    { range: dateRange(2, 2024, 7, 2026), statusKey: 's1', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: { pt: "Estudo Prévio e Estudo de Impacte Ambiental (Previsão)", en: "Preliminary Study and Environmental Impact Assessment (Forecast)" } },
+                    { range: dateRange(8, 2026, 12, 2026), statusKey: 's2', source: "#", tooltip: { pt: "Declaração de Impacte Ambiental (Previsão)", en: "Environmental Impact Statement (Forecast)" } },
                     { range: dateRange(1, 2027, 6, 2027), statusKey: 's3', source: "#", tooltip: { pt: "Lançamento do Concurso Público Internacional (Previsão)", en: "International Public Tender Launch (Forecast)" } },
                     { range: dateRange(7, 2027, 10, 2027), statusKey: 's4', source: "#", tooltip: { pt: "Propostas em Avaliação (Previsão)", en: "Proposals Under Evaluation (Forecast)" } },
                     { range: dateRange(11, 2027, 2, 2028), statusKey: 's5', source: "#", tooltip: { pt: "Assinatura do Contrato (Previsão)", en: "Contract Signature (Forecast)" } },
@@ -400,7 +402,7 @@ export const CONTENT = {
                 { label: { pt: "Concessionária", en: "Concessionaire" }, value: "N/A" }
             ],
             gantt: {
-                initial: { range: dateRange(2030, 2034) },
+                initial: { range: dateRange(2029, 2034) },
                 actual: [
                     { range: dateRange(6, 2024, 3, 2026), statusKey: 's1', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: { pt: "Estudo Prévio e Estudo de Impacte Ambiental", en: "Preliminary Study and Environmental Impact Assessment" } },
                     { range: dateRange(3, 2026, 6, 2027), statusKey: 's2', source: "#", tooltip: { pt: "Declaração de Impacte Ambiental (Previsão)", en: "Environmental Impact Statement (Forecast)" } },
@@ -430,7 +432,7 @@ export const CONTENT = {
                 { label: { pt: "Concessionária", en: "Concessionaire" }, value: "N/A" }
             ],
             gantt: {
-                initial: { range: dateRange(2030, 2034) },
+                initial: { range: dateRange(2029, 2034) },
                 actual: [
                     { range: dateRange(6, 2024, 3, 2026), statusKey: 's1', source: "https://www.infraestruturasdeportugal.pt/pt-pt/rede-de-alta-velocidade", tooltip: { pt: "Estudo Prévio e Estudo de Impacte Ambiental", en: "Preliminary Study and Environmental Impact Assessment" } },
                     { range: dateRange(3, 2026, 6, 2027), statusKey: 's2', source: "#", tooltip: { pt: "Declaração de Impacte Ambiental (Previsão)", en: "Environmental Impact Statement (Forecast)" } },
