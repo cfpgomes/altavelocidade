@@ -267,8 +267,8 @@ function MainApp({ lang, setLang }) {
         let baseColor = '#e2e8f0';
 
         // Mapeamento dos troços para as cores dos novos estados
-        if (sectionId === 'ppp1') baseColor = STATUS_CONFIG.s5.hex; // Contrato
-        if (sectionId === 'ppp2') baseColor = STATUS_CONFIG.s3.hex; // Concurso
+        if (sectionId === 'ppp1') baseColor = STATUS_CONFIG.s6.hex; // Contrato
+        if (sectionId === 'ppp2') baseColor = STATUS_CONFIG.s4.hex; // Concurso
         if (sectionId === 'ppp3') baseColor = STATUS_CONFIG.s2.hex; // DIA
         if (sectionId === 'quadruplicacao-linha-norte') baseColor = STATUS_CONFIG.s1.hex; // Estudo
         if (sectionId === 'sinalizacao-telecomunicacoes') baseColor = STATUS_CONFIG.s1.hex; // Estudo
